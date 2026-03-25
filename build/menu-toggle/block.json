@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "awesome-navigation/menu-toggle",
+  "version": "0.1.0",
+  "title": "Menu Toggle",
+  "category": "theme",
+  "icon": "menu",
+  "description": "A toggle button for the Awesome Navigation pill. Opens and closes the expandable menu area.",
+  "keywords": [
+    "menu",
+    "hamburger",
+    "toggle",
+    "navigation"
+  ],
+  "textdomain": "awesome-navigation",
+  "supports": {
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "padding": true
+    },
+    "border": {
+      "radius": true,
+      "width": true,
+      "color": true
+    },
+    "typography": {
+      "fontSize": false
+    },
+    "interactivity": true
+  },
+  "attributes": {
+    "iconSize": {
+      "type": "number",
+      "default": 20
+    },
+    "label": {
+      "type": "string",
+      "default": "Menu"
+    }
+  },
+  "render": "file:./render.php",
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css"
+}

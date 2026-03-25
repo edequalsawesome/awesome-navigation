@@ -1,0 +1,48 @@
+/**
+ * Menu Toggle block styles.
+ */
+
+.wp-block-awesome-navigation-menu-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	background: none;
+	border: none;
+	border-radius: 9999px;
+	color: currentColor;
+	cursor: pointer;
+	transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.wp-block-awesome-navigation-menu-toggle:hover {
+	background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+/* FIX #1 (a11y): Visible focus indicator for keyboard users. */
+.wp-block-awesome-navigation-menu-toggle:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+.wp-block-awesome-navigation-menu-toggle svg {
+	transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.awesome-nav-pill.is-open .wp-block-awesome-navigation-menu-toggle svg {
+	transform: rotate(90deg);
+}
+
+/* FIX #11 (a11y): Respect reduced motion preference. */
+@media (prefers-reduced-motion: reduce) {
+	.wp-block-awesome-navigation-menu-toggle,
+	.wp-block-awesome-navigation-menu-toggle svg {
+		transition: none;
+	}
+
+	.awesome-nav-pill.is-open .wp-block-awesome-navigation-menu-toggle svg {
+		transform: none;
+	}
+}

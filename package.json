@@ -1,0 +1,13 @@
+{
+	"name": "awesome-navigation",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Floating navigation pill with expandable menu canvas for WordPress 7.0",
+	"scripts": {
+		"build": "wp-scripts build",
+		"start": "wp-scripts start"
+	},
+	"devDependencies": {
+		"@wordpress/scripts": "^30.0.0"
+	}
+}

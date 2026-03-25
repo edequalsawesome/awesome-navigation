@@ -1,0 +1,392 @@
+/**
+ * Awesome Navigation - Nav Pill
+ *
+ * A floating navigation pill that expands to reveal menu content.
+ * - At the top of the page: expands inline, pushing content down.
+ * - When sticky + scrolled: expands inline, overlaying content
+ *   (sticky positioning handles this automatically).
+ *
+ * NO separate floating panel. The pill always expands internally.
+ */
+
+/* ==========================================================================
+   Pill Container (the sticky wrapper)
+   ========================================================================== */
+
+/* Sticky only when the user sets "Sticky" position in the block editor
+   (which adds .is-position-sticky). Respects the WP admin bar offset. */
+.wp-block-template-part:has(.awesome-nav-header.is-position-sticky) {
+	position: sticky;
+	top: var(--wp-admin--admin-bar--position-offset, 0px);
+	z-index: 100;
+}
+
+.awesome-nav-header {
+	padding: 1rem;
+	background: transparent;
+	pointer-events: none;
+}
+
+.awesome-nav-header > * {
+	pointer-events: auto;
+}
+
+/* ==========================================================================
+   The Pill Itself
+   ========================================================================== */
+
+.awesome-nav-pill {
+	display: flex;
+	flex-direction: column;
+	max-width: 75ch;
+	margin: 0 auto;
+
+	/* No default background — set it on the pill Group block in the editor.
+	   That color flows through to the topbar and content area. */
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	border-radius: 1rem;
+	box-shadow:
+		0 8px 24px rgba(0, 0, 0, 0.08),
+		0 0 0 1px rgba(0, 0, 0, 0.04);
+
+	overflow: hidden;
+	transform: translateZ(0);
+	transition: box-shadow 0.3s ease;
+}
+
+/* Override theme flow layout margins inside the pill */
+.awesome-nav-pill > * {
+	margin-block-start: 0 !important;
+	margin-block-end: 0 !important;
+}
+
+.awesome-nav-pill:hover {
+	box-shadow:
+		0 8px 32px rgba(0, 0, 0, 0.12),
+		0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+/* ==========================================================================
+   Top Bar (always visible)
+   ========================================================================== */
+
+.awesome-nav-topbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	padding: 0.5rem;
+	flex-shrink: 0;
+}
+
+/* Site title in the topbar */
+.awesome-nav-topbar .wp-block-site-title {
+	margin: 0;
+	flex: 1;
+	min-width: 0;
+}
+
+.awesome-nav-topbar .wp-block-site-title a {
+	font-size: 1rem;
+	font-weight: 600;
+	text-decoration: none;
+	color: inherit;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	display: block;
+}
+
+/* Site logo in the topbar */
+.awesome-nav-topbar .wp-block-site-logo {
+	flex-shrink: 0;
+}
+
+.awesome-nav-topbar .wp-block-site-logo img {
+	border-radius: 0.5rem;
+}
+
+/* ==========================================================================
+   Action Buttons
+   ========================================================================== */
+
+.awesome-nav-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	flex-shrink: 0;
+}
+
+/* Menu toggle button styles are in the Menu Toggle block's own stylesheet */
+
+/* ==========================================================================
+   Expandable Content Area
+   ========================================================================== */
+
+.awesome-nav-content {
+	display: grid;
+	grid-template-rows: 0fr;
+	opacity: 0;
+	overflow: hidden;
+	border-top: none;
+	/* FIX #13: Static padding — let grid-template-rows do the animation,
+	   avoids layout recalc on every animation frame. */
+	padding: 0 1rem;
+
+	transition:
+		grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+		opacity 0.4s ease-out 0.1s,
+		border-top 0.3s ease-out 0.2s;
+}
+
+.awesome-nav-content > * {
+	overflow: hidden;
+	min-height: 0;
+}
+
+.awesome-nav-pill.is-open .awesome-nav-content {
+	grid-template-rows: 1fr;
+	opacity: 1;
+	padding: 1rem 1rem 1.5rem;
+	overflow-y: auto;
+	border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Inner content fade-in */
+.awesome-nav-content-inner {
+	opacity: 0;
+	transform: translateY(-8px);
+	transition:
+		opacity 0.3s ease-out 0.1s,
+		transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
+}
+
+.awesome-nav-pill.is-open .awesome-nav-content-inner {
+	opacity: 1;
+	transform: translateY(0);
+}
+
+/* ==========================================================================
+   Inherit pill background by default, but allow user overrides.
+   Uses a CSS custom property that cascades through any wrapper depth.
+   The :not([style*="background"]) selector skips blocks where the user
+   explicitly set a background in the Site Editor.
+   ========================================================================== */
+
+.awesome-nav-content .wp-block-template-part:not([style*="background"]),
+.awesome-nav-content .wp-block-group:not([style*="background"]):not(.has-background),
+.awesome-nav-content .wp-block-columns:not([style*="background"]):not(.has-background),
+.awesome-nav-content .wp-block-column:not([style*="background"]):not(.has-background) {
+	background: inherit !important;
+}
+
+/* ==========================================================================
+   Navigation Block Inside the Pill
+   ========================================================================== */
+
+.awesome-nav-pill .wp-block-navigation {
+	width: 100%;
+}
+
+/* Kill default indentation/padding on the nav container */
+.awesome-nav-pill .wp-block-navigation__container {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	padding: 0 !important;
+	margin: 0 !important;
+}
+
+.awesome-nav-pill .wp-block-navigation-item {
+	padding: 0 !important;
+	margin: 0 !important;
+	width: 100%;
+}
+
+.awesome-nav-pill .wp-block-navigation-item__content {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.5rem 0;
+	border-radius: 0.5rem;
+	transition: background 0.2s ease, border-color 0.2s ease;
+	text-decoration: none;
+	color: inherit;
+	font-weight: 500;
+}
+
+.awesome-nav-pill .wp-block-navigation-item__content:hover {
+	background: rgba(128, 128, 128, 0.1);
+}
+
+/* ==========================================================================
+   "Outlined" Navigation Item Style
+   Like MrMurphy's category cards — colored left border, rounded corners,
+   tinted background. Register as a block style on core/navigation.
+   ========================================================================== */
+
+/*
+ * Each nav item can have a background color set in the editor.
+ * PHP converts it to --awesome-nav-item-color on the <li>.
+ * The border uses that color, and the fill is a tinted version.
+ * If no color is set, falls back to currentColor (text color).
+ */
+.wp-block-navigation.is-style-outlined .wp-block-navigation-item {
+	--awesome-nav-item-color: currentColor;
+}
+
+.wp-block-navigation.is-style-outlined .wp-block-navigation-item__content {
+	padding: 0.75rem 1rem;
+	border-radius: 0.5rem;
+	border: 2px solid var(--awesome-nav-item-color);
+	background: color-mix(in srgb, var(--awesome-nav-item-color) 15%, transparent) !important;
+	width: 95%;
+	transition:
+		background 0.2s ease,
+		border-color 0.2s ease,
+		transform 0.2s ease,
+		box-shadow 0.2s ease;
+}
+
+.wp-block-navigation.is-style-outlined .wp-block-navigation-item__content:hover {
+	background: color-mix(in srgb, var(--awesome-nav-item-color) 25%, transparent) !important;
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.wp-block-navigation.is-style-outlined .wp-block-navigation-item__content:active {
+	transform: translateY(0);
+}
+
+/* ==========================================================================
+   Submenu Canvas Takeover
+   ========================================================================== */
+
+.awesome-nav-pill .wp-block-navigation__submenu-container {
+	position: absolute !important;
+	top: 0 !important;
+	left: 0 !important;
+	right: 0 !important;
+	bottom: 0 !important;
+	width: 100% !important;
+	min-width: unset !important;
+	z-index: 10;
+
+	transform: translateX(100%);
+	opacity: 0;
+	transition:
+		transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+		opacity 0.3s ease;
+
+	display: flex !important;
+	flex-direction: column;
+	padding: 0.5rem;
+	gap: 0.25rem;
+
+	background: inherit !important;
+	border: none !important;
+	box-shadow: none !important;
+	border-radius: 0 !important;
+}
+
+.awesome-nav-pill .wp-block-navigation__submenu-container.is-submenu-open {
+	transform: translateX(0);
+	opacity: 1;
+}
+
+.awesome-nav-pill .wp-block-navigation__submenu-icon {
+	transition: transform 0.2s ease;
+}
+
+/* ==========================================================================
+   Back Button
+   ========================================================================== */
+
+.awesome-nav-back {
+	display: flex;
+	align-items: center;
+	gap: 0.5em;
+	padding: 0.5em 0.75em;
+	margin-bottom: 0.25em;
+
+	font-size: 0.875em;
+	font-weight: 500;
+	color: currentColor;
+	/* FIX #10: Increased from 0.5 to 0.7 for WCAG contrast compliance. */
+	opacity: 0.7;
+
+	background: none;
+	border: none;
+	border-radius: 0.5em;
+	cursor: pointer;
+	transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.awesome-nav-back:hover {
+	opacity: 1;
+	background: rgba(0, 0, 0, 0.04);
+}
+
+.awesome-nav-back::before {
+	content: "\2190";
+	font-size: 1.2em;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 600px) {
+	.awesome-nav-header {
+		padding: 0.5rem;
+	}
+
+	.awesome-nav-topbar {
+		gap: 0.5rem;
+	}
+
+	/* Stack columns on mobile and hide the column divider border */
+	.awesome-nav-content .wp-block-columns {
+		flex-direction: column !important;
+	}
+
+	.awesome-nav-content .wp-block-column {
+		border: none !important;
+		padding-right: 0 !important;
+	}
+}
+
+@media (min-width: 782px) {
+	.awesome-nav-pill {
+		max-width: 90ch;
+	}
+}
+
+/* Ensure nav items don't overflow their container */
+.wp-block-navigation.is-style-outlined .wp-block-navigation-item__content {
+	box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Reduced Motion (a11y)
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+	.awesome-nav-content,
+	.awesome-nav-content-inner,
+	.awesome-nav-pill .wp-block-navigation__submenu-container,
+	.awesome-nav-back,
+	.awesome-nav-pill .wp-block-navigation__submenu-icon,
+	.awesome-nav-pill .wp-block-navigation-item__content,
+	.wp-block-navigation.is-style-outlined .wp-block-navigation-item__content {
+		transition: none !important;
+	}
+
+	.awesome-nav-content-inner {
+		transform: none !important;
+	}
+
+	.awesome-nav-pill .wp-block-navigation__submenu-container {
+		transform: none !important;
+	}
+}
