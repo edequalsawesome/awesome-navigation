@@ -21,7 +21,6 @@
 	background: color-mix(in srgb, currentColor 10%, transparent);
 }
 
-/* FIX #1 (a11y): Visible focus indicator for keyboard users. */
 .wp-block-awesome-navigation-menu-toggle:focus-visible {
 	outline: 2px solid currentColor;
 	outline-offset: 2px;
@@ -31,11 +30,16 @@
 	transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Default open transform: rotate 90deg (works for three-lines, two-lines, dots) */
 .awesome-nav-pill.is-open .wp-block-awesome-navigation-menu-toggle svg {
 	transform: rotate(90deg);
 }
 
-/* FIX #11 (a11y): Respect reduced motion preference. */
+/* Plus icon: rotate 45deg to become an X */
+.awesome-nav-pill.is-open .wp-block-awesome-navigation-menu-toggle[data-icon="plus"] svg {
+	transform: rotate(45deg);
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.wp-block-awesome-navigation-menu-toggle,
 	.wp-block-awesome-navigation-menu-toggle svg {

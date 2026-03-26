@@ -8,6 +8,7 @@
 		"start": "wp-scripts start"
 	},
 	"devDependencies": {
+		"@wordpress/icons": "^12.0.0",
 		"@wordpress/scripts": "^30.0.0"
 	}
 }

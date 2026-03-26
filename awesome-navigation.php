@@ -109,8 +109,28 @@ function awesome_nav_register_blocks() {
 		'name'  => 'outlined',
 		'label' => __( 'Outlined', 'awesome-navigation' ),
 	) );
+
+	// Enqueue pill extension editor script (template part selector on core/group).
+	$pill_ext_asset = AWESOME_NAV_DIR . 'build/pill-extension/index.asset.php';
+	if ( file_exists( $pill_ext_asset ) ) {
+		$asset = require $pill_ext_asset;
+		wp_register_script(
+			'awesome-navigation-pill-extension',
+			AWESOME_NAV_URL . 'build/pill-extension/index.js',
+			$asset['dependencies'],
+			$asset['version']
+		);
+	}
 }
 add_action( 'init', 'awesome_nav_register_blocks' );
+
+/**
+ * Enqueue the pill extension script in the block editor.
+ */
+function awesome_nav_enqueue_pill_extension() {
+	wp_enqueue_script( 'awesome-navigation-pill-extension' );
+}
+add_action( 'enqueue_block_editor_assets', 'awesome_nav_enqueue_pill_extension' );
 
 /**
  * Add background color support to core/navigation-link and core/navigation-submenu.
@@ -184,6 +204,26 @@ function awesome_nav_maybe_enqueue_styles( $block_content, $block ) {
 add_filter( 'render_block', 'awesome_nav_maybe_enqueue_styles', 10, 2 );
 
 /**
+ * Localize editor data for the template part selector.
+ * Adapted from Ollie Menu Designer (GPL-3.0-or-later) by OllieWP Team.
+ */
+function awesome_nav_localize_editor_data() {
+	$screen = get_current_screen();
+	if ( ! $screen || ! $screen->is_block_editor() ) {
+		return;
+	}
+	?>
+	<script>
+		window.awesomeNavData = {
+			adminUrl: <?php echo wp_json_encode( admin_url() ); ?>,
+			siteUrl: <?php echo wp_json_encode( home_url() ); ?>
+		};
+	</script>
+	<?php
+}
+add_action( 'admin_head', 'awesome_nav_localize_editor_data' );
+
+/**
  * Enqueue editor styles (always needed in editor for preview).
  */
 function awesome_nav_enqueue_editor_assets() {
@@ -244,6 +284,82 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 	return $block_content;
 }
 add_filter( 'render_block', 'awesome_nav_inject_interactivity', 10, 2 );
+
+/**
+ * Capture the menuTemplatePart attribute from the pill Group block.
+ * The pill-extension JS stores the selected template part slug as
+ * an attribute on the core/group with class "awesome-nav-pill".
+ */
+function awesome_nav_capture_menu_template( $block_content, $block ) {
+	if ( 'core/group' !== $block['blockName'] ) {
+		return $block_content;
+	}
+
+	$class_name = $block['attrs']['className'] ?? '';
+	if ( ! str_contains( $class_name, 'awesome-nav-pill' ) ) {
+		return $block_content;
+	}
+
+	$slug = $block['attrs']['menuTemplatePart'] ?? '';
+	if ( $slug ) {
+		$GLOBALS['awesome_nav_menu_template_slug'] = $slug;
+	}
+
+	return $block_content;
+}
+add_filter( 'render_block', 'awesome_nav_capture_menu_template', 5, 2 );
+
+/**
+ * Override the template part slug when rendering inside the pill.
+ * If the Menu Toggle block specified a menuTemplatePart, swap the slug
+ * on any template-part block with slug "awesome-nav-menu".
+ */
+function awesome_nav_override_template_part( $pre_render, $block ) {
+	if ( 'core/template-part' !== $block['blockName'] ) {
+		return $pre_render;
+	}
+
+	$current_slug = $block['attrs']['slug'] ?? '';
+	$override     = $GLOBALS['awesome_nav_menu_template_slug'] ?? '';
+
+	// Only override the pill's default template part.
+	if ( $override && 'awesome-nav-menu' === $current_slug ) {
+		$block['attrs']['slug'] = $override;
+		// Re-render with the new slug by returning null (don't short-circuit)
+		// and modifying the block attrs.
+		// Actually, pre_render can't modify attrs. Use render_block instead.
+	}
+
+	return $pre_render;
+}
+
+/**
+ * Override template part slug in the rendered output.
+ * Since pre_render_block can't modify block attrs, we use render_block
+ * to detect the awesome-nav-menu template part and swap its content.
+ */
+function awesome_nav_swap_template_part( $block_content, $block ) {
+	if ( 'core/template-part' !== $block['blockName'] ) {
+		return $block_content;
+	}
+
+	$current_slug = $block['attrs']['slug'] ?? '';
+	$override     = $GLOBALS['awesome_nav_menu_template_slug'] ?? '';
+
+	if ( ! $override || 'awesome-nav-menu' === $current_slug || $override === $current_slug ) {
+		return $block_content;
+	}
+
+	// Only swap if the current slug is the default pill template part.
+	if ( 'awesome-nav-menu' !== $current_slug ) {
+		return $block_content;
+	}
+
+	// Render the overridden template part.
+	$override_block = '<!-- wp:template-part {"slug":"' . esc_attr( $override ) . '","area":"navigation-overlay","tagName":"div"} /-->';
+	return do_blocks( $override_block );
+}
+add_filter( 'render_block', 'awesome_nav_swap_template_part', 5, 2 );
 
 /**
  * Enqueue the overlay submenu takeover script when a Navigation block

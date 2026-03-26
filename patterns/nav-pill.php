@@ -31,16 +31,12 @@ register_block_pattern(
 
 <!-- wp:site-title {"style":{"typography":{"fontSize":"1rem","fontWeight":"600"}},"className":"awesome-nav-site-title"} /-->
 
-<!-- wp:group {"className":"awesome-nav-actions","layout":{"type":"flex","flexWrap":"nowrap"}} -->
-<div class="wp-block-group awesome-nav-actions">
 <!-- wp:awesome-navigation/menu-toggle /-->
-</div>
-<!-- /wp:group -->
 
 </div>
 <!-- /wp:group -->
 
-<!-- wp:group {"className":"awesome-nav-content","layout":{"type":"default"},"metadata":{"name":"Expandable Menu Content"}} -->
+<!-- wp:group {"className":"awesome-nav-content","layout":{"type":"default"},"metadata":{"name":"Expandable Menu Content"},"templateLock":"contentOnly"} -->
 <div class="wp-block-group awesome-nav-content">
 
 <!-- wp:group {"className":"awesome-nav-content-inner","layout":{"type":"flex","orientation":"vertical","justifyContent":"stretch"},"style":{"spacing":{"blockGap":"0"}}} -->

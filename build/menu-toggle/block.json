@@ -40,6 +40,10 @@
     "label": {
       "type": "string",
       "default": "Menu"
+    },
+    "iconVariant": {
+      "type": "string",
+      "default": "three-lines"
     }
   },
   "render": "file:./render.php",

@@ -106,17 +106,6 @@
 	border-radius: 0.5rem;
 }
 
-/* ==========================================================================
-   Action Buttons
-   ========================================================================== */
-
-.awesome-nav-actions {
-	display: flex;
-	align-items: center;
-	gap: 0.25rem;
-	flex-shrink: 0;
-}
-
 /* Menu toggle button styles are in the Menu Toggle block's own stylesheet */
 
 /* ==========================================================================
