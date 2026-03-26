@@ -188,10 +188,14 @@ const { state, actions } = store( 'awesome-navigation', {
 
 			// --- Click outside (FIX #8: named handler for proper cleanup) ---
 			const handleClickOutside = ( event ) => {
-				if ( state.isOpen && ref && ! ref.contains( event.target ) ) {
+				if ( ! ref || ref.contains( event.target ) ) {
+					return;
+				}
+				if ( state.isSearchOpen ) {
+					actions.closeSearch();
+				}
+				if ( state.isOpen ) {
 					actions.close();
-
-					// Return focus to toggle after outside click closes pill.
 					const toggle = ref.querySelector(
 						'.wp-block-awesome-navigation-menu-toggle'
 					);

@@ -93,8 +93,10 @@
 	opacity: 0.5;
 }
 
-.awesome-nav-search-input:focus {
+.awesome-nav-search-input:focus-visible {
 	border-color: currentColor;
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
 }
 
 .awesome-nav-search-submit {

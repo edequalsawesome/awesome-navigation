@@ -287,22 +287,28 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 			$search_label       = esc_attr__( 'Search', 'awesome-navigation' );
 			$search_action      = esc_url( home_url( '/' ) );
 
-			$search_panel = '<div class="awesome-nav-search-panel" aria-hidden="true" data-wp-bind--aria-hidden="!state.isSearchOpen">'
+			$search_submit_label = esc_attr__( 'Submit search', 'awesome-navigation' );
+
+			$search_panel = '<div id="awesome-nav-search-panel" class="awesome-nav-search-panel" aria-hidden="true" data-wp-bind--aria-hidden="!state.isSearchOpen">'
 				. '<form class="awesome-nav-search-form" role="search" action="' . $search_action . '" method="get">'
 				. '<input class="awesome-nav-search-input" type="search" name="s" placeholder="' . $search_placeholder . '" aria-label="' . $search_label . '" data-wp-on--keydown="actions.handleSearchKeydown" />'
-				. '<button class="awesome-nav-search-submit" type="submit" aria-label="' . $search_label . '">'
+				. '<button class="awesome-nav-search-submit" type="submit" aria-label="' . $search_submit_label . '">'
 				. '<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
 				. '</button>'
 				. '</form>'
 				. '</div>';
 
-			// Insert the panel before the closing </div> of the pill.
-			$block_content = preg_replace(
-				'/(<\/div>\s*)$/s',
-				$search_panel . '$1',
-				$block_content,
-				1
-			);
+			// Insert the panel before the pill's closing </div>.
+			// Uses strrpos instead of regex — O(n) scan, no backtracking.
+			$last_div_pos = strrpos( $block_content, '</div>' );
+			if ( false !== $last_div_pos ) {
+				$block_content = substr_replace(
+					$block_content,
+					$search_panel . '</div>',
+					$last_div_pos,
+					strlen( '</div>' )
+				);
+			}
 		}
 	}
 
@@ -319,7 +325,7 @@ add_filter( 'render_block', 'awesome_nav_inject_interactivity', 10, 2 );
  * use pre_render_block (which fires BEFORE inner blocks) to push the
  * slug onto the stack, and render_block to pop it after the pill is done.
  */
-function awesome_nav_template_slug_stack() {
+function &awesome_nav_template_slug_stack() {
 	static $stack = array();
 	return $stack;
 }

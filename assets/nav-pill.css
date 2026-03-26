@@ -421,6 +421,7 @@
 @media (prefers-reduced-motion: reduce) {
 	.awesome-nav-content,
 	.awesome-nav-content-inner,
+	.awesome-nav-search-panel,
 	.awesome-nav-pill .wp-block-navigation__submenu-container,
 	.awesome-nav-back,
 	.awesome-nav-pill .wp-block-navigation__submenu-icon,

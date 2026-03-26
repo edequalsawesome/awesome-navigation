@@ -16,8 +16,10 @@
  * @param WP_Block $block      Block instance.
  */
 
-$icon_size   = absint( $attributes['iconSize'] ?? 20 );
+$icon_size   = absint( $attributes['iconSize'] ?? 24 );
 $label       = $attributes['label'] ?? __( 'Search', 'awesome-navigation' );
+// TODO: Move search panel rendering here so $placeholder is used.
+// Currently the panel is injected by awesome-navigation.php with hardcoded i18n strings.
 $placeholder = $attributes['placeholder'] ?? __( 'Search...', 'awesome-navigation' );
 
 $wrapper_attributes = get_block_wrapper_attributes( array(
@@ -36,11 +38,6 @@ $close_svg = sprintf(
 	$icon_size
 );
 
-// Submit icon (arrow right) for the search form button.
-$submit_svg = sprintf(
-	'<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="%1$d" height="%1$d" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>',
-	$icon_size
-);
 
 printf(
 	'<div %1$s>
@@ -48,7 +45,10 @@ printf(
 			class="awesome-nav-search-btn"
 			type="button"
 			aria-label="%2$s"
+			aria-expanded="false"
+			aria-controls="awesome-nav-search-panel"
 			data-wp-on--click="actions.toggleSearch"
+			data-wp-bind--aria-expanded="state.isSearchOpen"
 		>%3$s%4$s</button>
 	</div>',
 	$wrapper_attributes,
