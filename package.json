@@ -3,9 +3,17 @@
 	"version": "0.1.0",
 	"private": true,
 	"description": "Floating navigation pill with expandable menu canvas for WordPress 7.0",
+	"files": [
+		"awesome-navigation.php",
+		"build/",
+		"assets/",
+		"patterns/",
+		"parts/"
+	],
 	"scripts": {
 		"build": "wp-scripts build",
-		"start": "wp-scripts start"
+		"start": "wp-scripts start",
+		"plugin-zip": "wp-scripts plugin-zip"
 	},
 	"devDependencies": {
 		"@wordpress/icons": "^12.0.0",
