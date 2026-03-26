@@ -14,8 +14,8 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 36px;
-	height: 36px;
+	width: 44px;
+	height: 44px;
 	padding: 0;
 	background: none;
 	border: none;
@@ -122,9 +122,18 @@
 	outline-offset: 2px;
 }
 
-/* Hide the wrapper div's block styling — it's just a container */
-.wp-block-awesome-navigation-search-toggle.awesome-nav-search-wrapper {
+/* Hide the wrapper div's block styling — it's just a container.
+   Also reset background in the editor where WP adds default block chrome. */
+.wp-block-awesome-navigation-search-toggle.awesome-nav-search-wrapper,
+.wp-block-awesome-navigation-search-toggle {
 	display: contents;
+	background: none !important;
+}
+
+/* In the editor, the block wrapper needs to be transparent */
+.wp-block-awesome-navigation-search-toggle.awesome-nav-search-toggle {
+	display: flex;
+	background: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

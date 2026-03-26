@@ -35,7 +35,7 @@
   "attributes": {
     "iconSize": {
       "type": "number",
-      "default": 20
+      "default": 24
     },
     "label": {
       "type": "string",
