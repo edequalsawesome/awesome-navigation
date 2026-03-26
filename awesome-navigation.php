@@ -205,23 +205,21 @@ add_filter( 'render_block', 'awesome_nav_maybe_enqueue_styles', 10, 2 );
 
 /**
  * Localize editor data for the template part selector.
+ * Uses wp_add_inline_script for proper CSP nonce support.
  * Adapted from Ollie Menu Designer (GPL-3.0-or-later) by OllieWP Team.
  */
 function awesome_nav_localize_editor_data() {
-	$screen = get_current_screen();
-	if ( ! $screen || ! $screen->is_block_editor() ) {
-		return;
-	}
-	?>
-	<script>
-		window.awesomeNavData = {
-			adminUrl: <?php echo wp_json_encode( admin_url() ); ?>,
-			siteUrl: <?php echo wp_json_encode( home_url() ); ?>
-		};
-	</script>
-	<?php
+	$data = wp_json_encode( array(
+		'adminUrl' => admin_url(),
+		'siteUrl'  => home_url(),
+	) );
+	wp_add_inline_script(
+		'awesome-navigation-pill-extension',
+		"window.awesomeNavData = {$data};",
+		'before'
+	);
 }
-add_action( 'admin_head', 'awesome_nav_localize_editor_data' );
+add_action( 'enqueue_block_editor_assets', 'awesome_nav_localize_editor_data' );
 
 /**
  * Enqueue editor styles (always needed in editor for preview).
@@ -286,11 +284,44 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 add_filter( 'render_block', 'awesome_nav_inject_interactivity', 10, 2 );
 
 /**
- * Capture the menuTemplatePart attribute from the pill Group block.
- * The pill-extension JS stores the selected template part slug as
- * an attribute on the core/group with class "awesome-nav-pill".
+ * Stack-based template part slug override.
+ *
+ * Uses a stack instead of a single global so that multiple pills on the
+ * same page each get their own template part. The pill's render_block
+ * filter (priority 10) fires AFTER inner blocks have rendered, so we
+ * use pre_render_block (which fires BEFORE inner blocks) to push the
+ * slug onto the stack, and render_block to pop it after the pill is done.
  */
-function awesome_nav_capture_menu_template( $block_content, $block ) {
+function awesome_nav_template_slug_stack() {
+	static $stack = array();
+	return $stack;
+}
+
+/**
+ * Before a pill renders its inner blocks, push its template slug onto the stack.
+ */
+function awesome_nav_push_template_slug( $pre_render, $parsed_block ) {
+	if ( 'core/group' !== $parsed_block['blockName'] ) {
+		return $pre_render;
+	}
+
+	$class_name = $parsed_block['attrs']['className'] ?? '';
+	if ( ! str_contains( $class_name, 'awesome-nav-pill' ) ) {
+		return $pre_render;
+	}
+
+	$slug  = $parsed_block['attrs']['menuTemplatePart'] ?? '';
+	$stack = &awesome_nav_template_slug_stack();
+	$stack[] = $slug;
+
+	return $pre_render; // Don't short-circuit — let WordPress render normally.
+}
+add_filter( 'pre_render_block', 'awesome_nav_push_template_slug', 10, 2 );
+
+/**
+ * After a pill finishes rendering, pop its slug off the stack.
+ */
+function awesome_nav_pop_template_slug( $block_content, $block ) {
 	if ( 'core/group' !== $block['blockName'] ) {
 		return $block_content;
 	}
@@ -300,43 +331,19 @@ function awesome_nav_capture_menu_template( $block_content, $block ) {
 		return $block_content;
 	}
 
-	$slug = $block['attrs']['menuTemplatePart'] ?? '';
-	if ( $slug ) {
-		$GLOBALS['awesome_nav_menu_template_slug'] = $slug;
-	}
+	$stack = &awesome_nav_template_slug_stack();
+	array_pop( $stack );
 
 	return $block_content;
 }
-add_filter( 'render_block', 'awesome_nav_capture_menu_template', 5, 2 );
+add_filter( 'render_block', 'awesome_nav_pop_template_slug', 20, 2 );
 
 /**
- * Override the template part slug when rendering inside the pill.
- * If the Menu Toggle block specified a menuTemplatePart, swap the slug
- * on any template-part block with slug "awesome-nav-menu".
- */
-function awesome_nav_override_template_part( $pre_render, $block ) {
-	if ( 'core/template-part' !== $block['blockName'] ) {
-		return $pre_render;
-	}
-
-	$current_slug = $block['attrs']['slug'] ?? '';
-	$override     = $GLOBALS['awesome_nav_menu_template_slug'] ?? '';
-
-	// Only override the pill's default template part.
-	if ( $override && 'awesome-nav-menu' === $current_slug ) {
-		$block['attrs']['slug'] = $override;
-		// Re-render with the new slug by returning null (don't short-circuit)
-		// and modifying the block attrs.
-		// Actually, pre_render can't modify attrs. Use render_block instead.
-	}
-
-	return $pre_render;
-}
-
-/**
- * Override template part slug in the rendered output.
- * Since pre_render_block can't modify block attrs, we use render_block
- * to detect the awesome-nav-menu template part and swap its content.
+ * Override the template part slug when rendering inside a pill.
+ *
+ * Reads the current slug from the top of the stack. If set, swaps the
+ * default "awesome-nav-menu" template part with the user-selected one.
+ * The slug is escaped via esc_attr() before being passed to do_blocks().
  */
 function awesome_nav_swap_template_part( $block_content, $block ) {
 	if ( 'core/template-part' !== $block['blockName'] ) {
@@ -344,18 +351,21 @@ function awesome_nav_swap_template_part( $block_content, $block ) {
 	}
 
 	$current_slug = $block['attrs']['slug'] ?? '';
-	$override     = $GLOBALS['awesome_nav_menu_template_slug'] ?? '';
-
-	if ( ! $override || 'awesome-nav-menu' === $current_slug || $override === $current_slug ) {
-		return $block_content;
-	}
-
-	// Only swap if the current slug is the default pill template part.
 	if ( 'awesome-nav-menu' !== $current_slug ) {
 		return $block_content;
 	}
 
-	// Render the overridden template part.
+	$stack = &awesome_nav_template_slug_stack();
+	if ( empty( $stack ) ) {
+		return $block_content;
+	}
+
+	$override = end( $stack );
+	if ( ! $override || $override === $current_slug ) {
+		return $block_content;
+	}
+
+	// Render the overridden template part (slug is escaped for the block comment).
 	$override_block = '<!-- wp:template-part {"slug":"' . esc_attr( $override ) . '","area":"navigation-overlay","tagName":"div"} /-->';
 	return do_blocks( $override_block );
 }
@@ -394,14 +404,15 @@ add_filter( 'render_block', 'awesome_nav_enqueue_overlay_script', 10, 2 );
 function awesome_nav_sanitize_css_color( $color ) {
 	$color = trim( $color );
 
-	// Hex colors: #rgb, #rrggbb, #rrggbbaa
-	if ( preg_match( '/^#[0-9a-fA-F]{3,8}$/', $color ) ) {
+	// Hex colors: #rgb, #rgba, #rrggbb, #rrggbbaa (exact valid lengths only).
+	if ( preg_match( '/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $color ) ) {
 		return $color;
 	}
 
 	// rgb/rgba/hsl/hsla functional notation — allow digits, commas, spaces,
-	// dots, percentages, slashes (for modern syntax), and the "from" keyword.
-	if ( preg_match( '/^(rgba?|hsla?)\([0-9a-zA-Z\s,.\/%\-]+\)$/', $color ) ) {
+	// dots, percentages, slashes (for modern syntax), and specific keywords
+	// (from, none, deg, turn, grad, rad). Blocks dangerous CSS keywords.
+	if ( preg_match( '/^(rgba?|hsla?)\([0-9\s,.\/%\-]+(from|none|deg|turn|grad|rad|[0-9\s,.\/%\-])*\)$/i', $color ) ) {
 		return $color;
 	}
 
@@ -439,8 +450,8 @@ function awesome_nav_convert_link_bg_to_variable( $block_content, $block ) {
 	if ( $processor->next_tag( 'li' ) ) {
 		$style = $processor->get_attribute( 'style' ) ?? '';
 
-		// FIX #11: Remove both background-color AND background shorthand.
-		$style = preg_replace( '/background(-color)?:\s*[^;]+;?\s*/', '', $style );
+		// FIX #11: Remove both background-color AND background shorthand (case-insensitive).
+		$style = preg_replace( '/background(-color)?:\s*[^;]+;?\s*/i', '', $style );
 
 		$style = "--awesome-nav-item-color: {$color_value}; background: transparent !important; " . trim( $style );
 
