@@ -31,6 +31,8 @@ register_block_pattern(
 
 <!-- wp:site-title {"style":{"typography":{"fontSize":"1rem","fontWeight":"600"}},"className":"awesome-nav-site-title"} /-->
 
+<!-- wp:awesome-navigation/search-toggle /-->
+
 <!-- wp:awesome-navigation/menu-toggle /-->
 
 </div>

@@ -99,6 +99,7 @@ register_activation_hook( __FILE__, 'awesome_nav_activate' );
  */
 function awesome_nav_register_blocks() {
 	register_block_type( AWESOME_NAV_DIR . 'build/menu-toggle' );
+	register_block_type( AWESOME_NAV_DIR . 'build/search-toggle' );
 
 	register_block_style( 'core/group', array(
 		'name'  => 'frosted-glass',
@@ -267,6 +268,7 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 			$processor->set_attribute( 'data-wp-init', 'callbacks.init' );
 			$processor->set_attribute( 'data-wp-on--keydown', 'actions.handleKeydown' );
 			$processor->set_attribute( 'data-wp-class--is-open', 'state.isOpen' );
+			$processor->set_attribute( 'data-wp-class--is-search-open', 'state.isSearchOpen' );
 			$block_content = $processor->get_updated_html();
 		}
 
@@ -276,6 +278,31 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 			$processor2->set_attribute( 'aria-hidden', 'true' );
 			$processor2->set_attribute( 'data-wp-bind--aria-hidden', '!state.isOpen' );
 			$block_content = $processor2->get_updated_html();
+		}
+
+		// Inject search form panel into the pill (after the content area).
+		// Only shows when is-search-open is active — uses same grid expand animation.
+		if ( str_contains( $block_content, 'awesome-nav-search-btn' ) ) {
+			$search_placeholder = esc_attr__( 'Search...', 'awesome-navigation' );
+			$search_label       = esc_attr__( 'Search', 'awesome-navigation' );
+			$search_action      = esc_url( home_url( '/' ) );
+
+			$search_panel = '<div class="awesome-nav-search-panel" aria-hidden="true" data-wp-bind--aria-hidden="!state.isSearchOpen">'
+				. '<form class="awesome-nav-search-form" role="search" action="' . $search_action . '" method="get">'
+				. '<input class="awesome-nav-search-input" type="search" name="s" placeholder="' . $search_placeholder . '" aria-label="' . $search_label . '" data-wp-on--keydown="actions.handleSearchKeydown" />'
+				. '<button class="awesome-nav-search-submit" type="submit" aria-label="' . $search_label . '">'
+				. '<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
+				. '</button>'
+				. '</form>'
+				. '</div>';
+
+			// Insert the panel before the closing </div> of the pill.
+			$block_content = preg_replace(
+				'/(<\/div>\s*)$/s',
+				$search_panel . '$1',
+				$block_content,
+				1
+			);
 		}
 	}
 

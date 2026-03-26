@@ -138,6 +138,41 @@
 	opacity: 1;
 	padding: 1rem 1rem 1.5rem;
 	overflow-y: auto;
+	max-height: calc(100vh - 120px);
+	max-height: calc(100dvh - 120px); /* dynamic viewport for mobile */
+	border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* ==========================================================================
+   Search Panel — same expand animation as the content area,
+   but shown only when is-search-open (not is-open).
+   ========================================================================== */
+
+/* Search panel — exact same expand pattern as .awesome-nav-content */
+.awesome-nav-search-panel {
+	display: grid;
+	grid-template-rows: 0fr;
+	opacity: 0;
+	overflow: hidden;
+	border-top: none;
+	padding: 0 1rem;
+
+	transition:
+		grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+		opacity 0.4s ease-out 0.1s,
+		border-top 0.3s ease-out 0.2s;
+}
+
+.awesome-nav-search-panel > * {
+	overflow: hidden;
+	min-height: 0;
+}
+
+.awesome-nav-pill.is-search-open .awesome-nav-search-panel {
+	grid-template-rows: 1fr;
+	opacity: 1;
+	padding: 1rem 1rem 1.5rem;
+	overflow-y: auto;
 	border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
@@ -224,12 +259,35 @@
 	--awesome-nav-item-color: currentColor;
 }
 
-.wp-block-navigation.is-style-outlined .wp-block-navigation-item__content {
+/* When a nav item has a background color set, clip it to match the
+   outlined card shape. On the frontend, the PHP filter converts this
+   to a CSS variable for the tinted border+fill. In the editor, this
+   ensures the solid color at least stays within the rounded corners. */
+.wp-block-navigation.is-style-outlined .wp-block-navigation-item.has-background {
+	border-radius: 0.5rem;
+	padding: 0 !important;
+}
+
+/* Override the vertical nav's flex-start alignment so items stretch
+   to fill the container — needed for both frontend and editor. */
+.wp-block-navigation.is-style-outlined.is-vertical,
+.wp-block-navigation.is-style-outlined .wp-block-navigation__container {
+	--navigation-layout-align: stretch;
+	align-items: stretch;
+}
+
+.wp-block-navigation.is-style-outlined .wp-block-navigation-item {
+	width: 100%;
+}
+
+.wp-block-navigation.is-style-outlined .wp-block-navigation-item__content,
+.wp-block-navigation.is-style-outlined .wp-block-navigation-item__content.wp-block-navigation-item__content {
 	padding: 0.75rem 1rem;
 	border-radius: 0.5rem;
 	border: 2px solid var(--awesome-nav-item-color);
 	background: color-mix(in srgb, var(--awesome-nav-item-color) 15%, transparent) !important;
 	width: 95%;
+	display: block;
 	transition:
 		background 0.2s ease,
 		border-color 0.2s ease,

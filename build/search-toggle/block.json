@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "awesome-navigation/search-toggle",
+  "version": "0.1.0",
+  "title": "Search Toggle",
+  "category": "theme",
+  "icon": "search",
+  "description": "A search button for the Awesome Navigation pill. Expands an inline search field in the topbar.",
+  "keywords": [
+    "search",
+    "find",
+    "navigation"
+  ],
+  "textdomain": "awesome-navigation",
+  "supports": {
+    "color": {
+      "background": true,
+      "text": true
+    },
+    "spacing": {
+      "padding": true
+    },
+    "border": {
+      "radius": true,
+      "width": true,
+      "color": true
+    },
+    "typography": {
+      "fontSize": false
+    },
+    "interactivity": true
+  },
+  "attributes": {
+    "iconSize": {
+      "type": "number",
+      "default": 20
+    },
+    "label": {
+      "type": "string",
+      "default": "Search"
+    },
+    "placeholder": {
+      "type": "string",
+      "default": "Search..."
+    }
+  },
+  "render": "file:./render.php",
+  "editorScript": "file:./index.js",
+  "style": "file:./style-index.css"
+}

@@ -13,6 +13,7 @@ const SCROLL_THRESHOLD = 50;
 const { state, actions } = store( 'awesome-navigation', {
 	state: {
 		isOpen: false,
+		isSearchOpen: false,
 		isScrolled: false,
 		submenuStack: [],
 
@@ -31,6 +32,10 @@ const { state, actions } = store( 'awesome-navigation', {
 		},
 
 		open: () => {
+			// Close search if open.
+			if ( state.isSearchOpen ) {
+				state.isSearchOpen = false;
+			}
 			state.isOpen = true;
 
 			// FIX #6 (a11y): Move focus into the content container.
@@ -54,7 +59,17 @@ const { state, actions } = store( 'awesome-navigation', {
 		},
 
 		handleKeydown: ( event ) => {
-			if ( event.key !== 'Escape' || ! state.isOpen ) {
+			if ( event.key !== 'Escape' ) {
+				return;
+			}
+
+			// Close search first if open.
+			if ( state.isSearchOpen ) {
+				actions.closeSearch();
+				return;
+			}
+
+			if ( ! state.isOpen ) {
 				return;
 			}
 
@@ -106,6 +121,52 @@ const { state, actions } = store( 'awesome-navigation', {
 				el.classList.remove( 'is-submenu-open' );
 			} );
 			state.submenuStack = [];
+		},
+
+		/**
+		 * Toggle the inline search.
+		 */
+		toggleSearch: () => {
+			if ( state.isSearchOpen ) {
+				actions.closeSearch();
+			} else {
+				actions.openSearch();
+			}
+		},
+
+		openSearch: () => {
+			if ( state.isOpen ) {
+				actions.close();
+			}
+			state.isSearchOpen = true;
+
+			const { ref } = getElement();
+			requestAnimationFrame( () => {
+				const input = ref
+					.closest( '.awesome-nav-pill' )
+					?.querySelector( '.awesome-nav-search-input' );
+				if ( input ) {
+					input.focus();
+				}
+			} );
+		},
+
+		closeSearch: () => {
+			state.isSearchOpen = false;
+
+			const { ref } = getElement();
+			const btn = ref
+				.closest( '.awesome-nav-pill' )
+				?.querySelector( '.awesome-nav-search-btn' );
+			if ( btn ) {
+				btn.focus();
+			}
+		},
+
+		handleSearchKeydown: ( event ) => {
+			if ( event.key === 'Escape' ) {
+				actions.closeSearch();
+			}
 		},
 	},
 

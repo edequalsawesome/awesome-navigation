@@ -1,0 +1,134 @@
+/**
+ * Search Toggle block styles.
+ *
+ * The search button sits in the topbar. When clicked, the pill expands
+ * (same as menu) to show a search input in the content area.
+ * The button icon swaps between magnifying glass and X.
+ */
+
+/* ==========================================================================
+   The Toggle Button
+   ========================================================================== */
+
+.awesome-nav-search-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	background: none;
+	border: none;
+	border-radius: 9999px;
+	color: currentColor;
+	cursor: pointer;
+	flex-shrink: 0;
+	position: relative;
+	transition: background 0.2s ease;
+}
+
+.awesome-nav-search-btn:hover {
+	background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.awesome-nav-search-btn:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+/* Icon swap: search icon visible by default, X hidden */
+.awesome-nav-search-icon {
+	position: absolute;
+	transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.awesome-nav-search-icon--search {
+	opacity: 1;
+	transform: rotate(0deg);
+}
+
+.awesome-nav-search-icon--close {
+	opacity: 0;
+	transform: rotate(-90deg);
+}
+
+/* When search is open: swap icons */
+.awesome-nav-pill.is-search-open .awesome-nav-search-icon--search {
+	opacity: 0;
+	transform: rotate(90deg);
+}
+
+.awesome-nav-pill.is-search-open .awesome-nav-search-icon--close {
+	opacity: 1;
+	transform: rotate(0deg);
+}
+
+/* ==========================================================================
+   Search Form (inside the pill's expandable content area)
+   ========================================================================== */
+
+.awesome-nav-search-form {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	width: 100%;
+	padding: 0;
+}
+
+.awesome-nav-search-input {
+	flex: 1;
+	min-width: 0;
+	padding: 0.75rem 1rem;
+	border: 2px solid currentColor;
+	border-radius: 9999px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	font-size: 1.125rem;
+	outline: none;
+}
+
+.awesome-nav-search-input::placeholder {
+	color: currentColor;
+	opacity: 0.5;
+}
+
+.awesome-nav-search-input:focus {
+	border-color: currentColor;
+}
+
+.awesome-nav-search-submit {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	background: color-mix(in srgb, currentColor 10%, transparent);
+	border: none;
+	border-radius: 9999px;
+	color: currentColor;
+	cursor: pointer;
+	flex-shrink: 0;
+	transition: background 0.2s ease;
+}
+
+.awesome-nav-search-submit:hover {
+	background: color-mix(in srgb, currentColor 20%, transparent);
+}
+
+.awesome-nav-search-submit:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
+/* Hide the wrapper div's block styling — it's just a container */
+.wp-block-awesome-navigation-search-toggle.awesome-nav-search-wrapper {
+	display: contents;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.awesome-nav-search-icon {
+		transition: none;
+	}
+}
