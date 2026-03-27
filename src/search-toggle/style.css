@@ -124,19 +124,7 @@
 	outline-offset: 2px;
 }
 
-/* Hide the wrapper div's block styling — it's just a container.
-   Also reset background in the editor where WP adds default block chrome. */
-.wp-block-awesome-navigation-search-toggle.awesome-nav-search-wrapper,
-.wp-block-awesome-navigation-search-toggle {
-	display: contents;
-	background: none !important;
-}
-
-/* In the editor, the block wrapper needs to be transparent */
-.wp-block-awesome-navigation-search-toggle.awesome-nav-search-toggle {
-	display: flex;
-	background: none !important;
-}
+/* Block wrapper is now the button itself (no outer div) */
 
 @media (prefers-reduced-motion: reduce) {
 	.awesome-nav-search-icon {

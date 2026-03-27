@@ -31,9 +31,12 @@ register_block_pattern(
 
 <!-- wp:site-title {"style":{"typography":{"fontSize":"1rem","fontWeight":"600"}},"className":"awesome-nav-site-title"} /-->
 
+<!-- wp:group {"className":"awesome-nav-actions","layout":{"type":"flex","flexWrap":"nowrap"},"metadata":{"name":"Actions"}} -->
+<div class="wp-block-group awesome-nav-actions">
 <!-- wp:awesome-navigation/search-toggle /-->
-
 <!-- wp:awesome-navigation/menu-toggle /-->
+</div>
+<!-- /wp:group -->
 
 </div>
 <!-- /wp:group -->

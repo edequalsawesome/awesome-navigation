@@ -137,7 +137,7 @@ add_action( 'enqueue_block_editor_assets', 'awesome_nav_enqueue_pill_extension' 
  * Add background color support to core/navigation-link and core/navigation-submenu.
  */
 function awesome_nav_extend_nav_link_supports( $args, $block_type ) {
-	$extend_blocks = array( 'core/navigation-link', 'core/navigation-submenu', 'core/page-list-item' );
+	$extend_blocks = array( 'core/navigation-link', 'core/navigation-submenu', 'core/page-list-item', 'core/home-link' );
 
 	if ( ! in_array( $block_type, $extend_blocks, true ) ) {
 		return $args;
@@ -461,7 +461,7 @@ function awesome_nav_sanitize_css_color( $color ) {
  * Convert nav link background colors into a CSS custom property.
  */
 function awesome_nav_convert_link_bg_to_variable( $block_content, $block ) {
-	$target_blocks = array( 'core/navigation-link', 'core/navigation-submenu', 'core/page-list-item' );
+	$target_blocks = array( 'core/navigation-link', 'core/navigation-submenu', 'core/page-list-item', 'core/home-link' );
 
 	if ( ! in_array( $block['blockName'], $target_blocks, true ) ) {
 		return $block_content;

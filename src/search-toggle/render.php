@@ -23,7 +23,13 @@ $label       = $attributes['label'] ?? __( 'Search', 'awesome-navigation' );
 $placeholder = $attributes['placeholder'] ?? __( 'Search...', 'awesome-navigation' );
 
 $wrapper_attributes = get_block_wrapper_attributes( array(
-	'class' => 'awesome-nav-search-wrapper',
+	'class'                          => 'awesome-nav-search-btn',
+	'type'                           => 'button',
+	'aria-label'                     => esc_attr( $label ),
+	'aria-expanded'                  => 'false',
+	'aria-controls'                  => 'awesome-nav-search-panel',
+	'data-wp-on--click'              => 'actions.toggleSearch',
+	'data-wp-bind--aria-expanded'    => 'state.isSearchOpen',
 ) );
 
 // Search icon (magnifying glass).
@@ -39,20 +45,4 @@ $close_svg = sprintf(
 );
 
 
-printf(
-	'<div %1$s>
-		<button
-			class="awesome-nav-search-btn"
-			type="button"
-			aria-label="%2$s"
-			aria-expanded="false"
-			aria-controls="awesome-nav-search-panel"
-			data-wp-on--click="actions.toggleSearch"
-			data-wp-bind--aria-expanded="state.isSearchOpen"
-		>%3$s%4$s</button>
-	</div>',
-	$wrapper_attributes,
-	esc_attr( $label ),
-	$search_svg,
-	$close_svg
-);
+printf( '<button %1$s>%2$s%3$s</button>', $wrapper_attributes, $search_svg, $close_svg );

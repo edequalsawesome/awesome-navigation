@@ -9,7 +9,7 @@ import { __ } from '@wordpress/i18n';
 export default function Edit( { attributes, setAttributes } ) {
 	const { iconSize, label, placeholder } = attributes;
 	const blockProps = useBlockProps( {
-		className: 'awesome-nav-search-wrapper',
+		className: 'awesome-nav-search-btn',
 	} );
 
 	return (
@@ -53,13 +53,8 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<div { ...blockProps }>
-				<button
-					className="awesome-nav-search-btn"
-					type="button"
-					aria-label={ label }
-				>
-					<svg
+			<button { ...blockProps } type="button" aria-label={ label }>
+				<svg
 						aria-hidden="true"
 						xmlns="http://www.w3.org/2000/svg"
 						viewBox="0 0 24 24"
@@ -74,8 +69,7 @@ export default function Edit( { attributes, setAttributes } ) {
 						<circle cx="11" cy="11" r="8" />
 						<line x1="21" x2="16.65" y1="21" y2="16.65" />
 					</svg>
-				</button>
-			</div>
+			</button>
 		</>
 	);
 }
