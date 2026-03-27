@@ -223,9 +223,14 @@ function awesome_nav_localize_editor_data() {
 add_action( 'enqueue_block_editor_assets', 'awesome_nav_localize_editor_data' );
 
 /**
- * Enqueue editor styles (always needed in editor for preview).
+ * Enqueue editor styles via enqueue_block_assets so they load inside
+ * the iframed editor (WP 6.9+). Only loads in admin context.
  */
 function awesome_nav_enqueue_editor_assets() {
+	if ( ! is_admin() ) {
+		return;
+	}
+
 	wp_enqueue_style(
 		'awesome-navigation-pill-editor',
 		AWESOME_NAV_URL . 'assets/nav-pill.css',
@@ -240,7 +245,7 @@ function awesome_nav_enqueue_editor_assets() {
 		AWESOME_NAV_VERSION
 	);
 }
-add_action( 'enqueue_block_editor_assets', 'awesome_nav_enqueue_editor_assets' );
+add_action( 'enqueue_block_assets', 'awesome_nav_enqueue_editor_assets' );
 
 /**
  * Inject Interactivity API directives onto the nav pill markup.

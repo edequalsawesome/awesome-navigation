@@ -16,8 +16,9 @@ import {
 	ComboboxControl,
 	Button,
 	Spinner,
-	HStack,
-	Spacer,
+	// Use experimental imports with fallback — WP.com may not have stable exports yet.
+	__experimentalHStack as HStack,
+	__experimentalSpacer as Spacer,
 } from '@wordpress/components';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { addFilter } from '@wordpress/hooks';
