@@ -285,26 +285,22 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 			$block_content = $processor2->get_updated_html();
 		}
 
-		// Inject search form panel into the pill (after the content area).
-		// Only shows when is-search-open is active — uses same grid expand animation.
-		if ( str_contains( $block_content, 'awesome-nav-search-btn' ) ) {
-			$search_placeholder = esc_attr__( 'Search...', 'awesome-navigation' );
-			$search_label       = esc_attr__( 'Search', 'awesome-navigation' );
-			$search_action      = esc_url( home_url( '/' ) );
-
-			$search_submit_label = esc_attr__( 'Submit search', 'awesome-navigation' );
-
+		// Inject the search panel as a direct child of the pill.
+		// The search-toggle block's render.php stores its attributes in a global;
+		// we use them here so the panel respects the block's placeholder/label settings.
+		global $awesome_nav_search_attrs;
+		if ( ! empty( $awesome_nav_search_attrs ) ) {
+			$sa = $awesome_nav_search_attrs;
 			$search_panel = '<div id="awesome-nav-search-panel" class="awesome-nav-search-panel" aria-hidden="true" data-wp-bind--aria-hidden="!state.isSearchOpen">'
-				. '<form class="awesome-nav-search-form" role="search" action="' . $search_action . '" method="get">'
-				. '<input class="awesome-nav-search-input" type="search" name="s" placeholder="' . $search_placeholder . '" aria-label="' . $search_label . '" data-wp-on--keydown="actions.handleSearchKeydown" />'
-				. '<button class="awesome-nav-search-submit" type="submit" aria-label="' . $search_submit_label . '">'
+				. '<form class="awesome-nav-search-form" role="search" action="' . esc_url( $sa['action'] ) . '" method="get">'
+				. '<input class="awesome-nav-search-input" type="search" name="s" placeholder="' . esc_attr( $sa['placeholder'] ) . '" aria-label="' . esc_attr( $sa['label'] ) . '" data-wp-on--keydown="actions.handleSearchKeydown" />'
+				. '<button class="awesome-nav-search-submit" type="submit" aria-label="' . esc_attr( $sa['submit_label'] ) . '">'
 				. '<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
 				. '</button>'
 				. '</form>'
 				. '</div>';
 
-			// Insert the panel before the pill's closing </div>.
-			// Uses strrpos instead of regex — O(n) scan, no backtracking.
+			// Insert before the pill's closing </div>.
 			$last_div_pos = strrpos( $block_content, '</div>' );
 			if ( false !== $last_div_pos ) {
 				$block_content = substr_replace(
@@ -314,6 +310,9 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 					strlen( '</div>' )
 				);
 			}
+
+			// Clear the global so it doesn't leak to other pills.
+			$awesome_nav_search_attrs = null;
 		}
 	}
 

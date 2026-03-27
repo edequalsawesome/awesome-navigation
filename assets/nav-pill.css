@@ -148,7 +148,9 @@
    but shown only when is-search-open (not is-open).
    ========================================================================== */
 
-/* Search panel — exact same expand pattern as .awesome-nav-content */
+/* Search panel — injected as a direct child of the pill by the main plugin's
+   render_block filter, using attributes from the search-toggle block.
+   Same expand pattern as .awesome-nav-content. */
 .awesome-nav-search-panel {
 	display: grid;
 	grid-template-rows: 0fr;
