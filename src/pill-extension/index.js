@@ -22,40 +22,20 @@ import {
 } from '@wordpress/components';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { addFilter } from '@wordpress/hooks';
-import { registerBlockVariation } from '@wordpress/blocks';
 import { useEntityRecords } from '@wordpress/core-data';
 import { useSelect, useDispatch } from '@wordpress/data';
 import { useState } from '@wordpress/element';
-import { pencil, plus, menu as menuIcon } from '@wordpress/icons';
+import { pencil, plus } from '@wordpress/icons';
 import { decodeEntities } from '@wordpress/html-entities';
 
 /**
- * Register a block variation on core/group so "Navigation Pill" appears
- * in the block inserter and slash command menu (/navigation-pill).
+ * Block variation removed — it inserted an empty Group without inner blocks.
+ * The "Navigation Pill" pattern (registered in patterns/nav-pill.php) provides
+ * the full structure and is discoverable via the inserter and slash commands.
+ *
+ * Instead, we just use isActive to detect existing pill blocks and show
+ * the custom icon/name in the editor for them.
  */
-registerBlockVariation( 'core/group', {
-	name: 'awesome-navigation-pill',
-	title: __( 'Navigation Pill', 'awesome-navigation' ),
-	description: __(
-		'A floating navigation bar that expands to reveal a customizable menu canvas.',
-		'awesome-navigation'
-	),
-	icon: menuIcon,
-	category: 'theme',
-	keywords: [
-		__( 'nav', 'awesome-navigation' ),
-		__( 'menu', 'awesome-navigation' ),
-		__( 'pill', 'awesome-navigation' ),
-		__( 'header', 'awesome-navigation' ),
-	],
-	attributes: {
-		className: 'awesome-nav-pill',
-		metadata: { name: 'Navigation Pill' },
-	},
-	isActive: ( blockAttributes ) =>
-		blockAttributes.className?.includes( 'awesome-nav-pill' ),
-	scope: [ 'inserter', 'block' ],
-} );
 
 /**
  * Add menuTemplatePart attribute to core/group blocks.
