@@ -158,6 +158,9 @@
 	overflow: hidden;
 	border-top: none;
 	padding: 0 1rem;
+	/* Inherit pill's colors so the panel matches the pill background */
+	background: inherit;
+	color: inherit;
 
 	transition:
 		grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),

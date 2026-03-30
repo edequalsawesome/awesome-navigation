@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: Awesome Navigation
- * Description: A floating navigation pill that expands to reveal your menu. Pushes content down at the top, floats over when scrolled. Includes frosted glass overlay patterns for WP 7.0 Navigation Overlays.
+ * Description: A floating navigation pill that expands to reveal your menu. Pushes content down at the top, floats over when scrolled. On WP 7.0+ includes frosted glass overlay patterns for Navigation Overlays.
  * Version: 0.1.0
- * Requires at least: 7.0
+ * Requires at least: 6.5
  * Requires PHP: 8.0
  * Author: eD! Thomas
  * Author URL: https://edequalsaweso.me/development
@@ -24,6 +24,11 @@ define( 'AWESOME_NAV_URL', plugin_dir_url( __FILE__ ) );
  * in the Site Editor.
  */
 function awesome_nav_activate() {
+	// Navigation Overlay template parts require WP 7.0+.
+	if ( ! defined( 'WP_TEMPLATE_PART_AREA_NAVIGATION_OVERLAY' ) ) {
+		return;
+	}
+
 	// Check if the template part already exists.
 	$existing = get_posts( array(
 		'post_type'   => 'wp_template_part',

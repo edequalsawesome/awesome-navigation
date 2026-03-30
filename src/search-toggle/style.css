@@ -17,7 +17,8 @@
 	width: 44px;
 	height: 44px;
 	padding: 0;
-	background: none;
+	/* No background reset — let WP color support classes apply.
+	   Default transparent is handled by the button element's UA styles. */
 	border: none;
 	border-radius: 9999px;
 	color: currentColor;
@@ -106,10 +107,11 @@
 	width: 44px;
 	height: 44px;
 	padding: 0;
+	/* Inherit colors from the pill — matches the toggle buttons */
 	background: color-mix(in srgb, currentColor 10%, transparent);
-	border: none;
+	border: 2px solid currentColor;
 	border-radius: 9999px;
-	color: currentColor;
+	color: inherit;
 	cursor: pointer;
 	flex-shrink: 0;
 	transition: background 0.2s ease;

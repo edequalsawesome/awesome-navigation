@@ -4,7 +4,13 @@
  *
  * Site logo, title, tagline, navigation, social links, and search
  * on a frosted glass background.
+ * Requires WP 7.0+ Navigation Overlays.
  */
+
+// Navigation Overlay patterns require WP 7.0+.
+if ( ! defined( 'WP_TEMPLATE_PART_AREA_NAVIGATION_OVERLAY' ) ) {
+	return;
+}
 
 register_block_pattern(
 	'awesome-navigation/frosted-canvas-full',
