@@ -7,19 +7,15 @@
  * @param WP_Block $block      Block instance.
  */
 
-$icon_size    = absint( $attributes['iconSize'] ?? 20 );
-$label        = $attributes['label'] ?? __( 'Menu', 'awesome-navigation' );
-$icon_variant = $attributes['iconVariant'] ?? 'three-lines';
+defined( 'ABSPATH' ) || exit;
 
-$wrapper_attributes = get_block_wrapper_attributes( array(
-	'class'                       => 'awesome-nav-toggle',
-	'type'                        => 'button',
-	'aria-label'                  => esc_attr( $label ),
-	'aria-expanded'               => 'false',
-	'data-icon'                   => esc_attr( $icon_variant ),
-	'data-wp-on--click'           => 'actions.toggle',
-	'data-wp-bind--aria-expanded' => 'state.isOpen',
-) );
+// Clamp to the editor's RangeControl bounds (14-32) — raw post content or
+// REST writes bypass the editor constraint.
+$icon_size = min( 32, max( 14, absint( $attributes['iconSize'] ?? 20 ) ) );
+
+// block.json default is '' so this fallback is translatable (block.json
+// attribute defaults are never run through i18n).
+$label = ( $attributes['label'] ?? '' ) ?: __( 'Menu', 'awesome-navigation' );
 
 // Icon SVG paths by variant.
 $icon_paths = array(
@@ -29,12 +25,28 @@ $icon_paths = array(
 	'dots'        => '<circle cx="12" cy="6" r="1.5" fill="currentColor" stroke="none"></circle><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"></circle><circle cx="12" cy="18" r="1.5" fill="currentColor" stroke="none"></circle>',
 );
 
-$paths = $icon_paths[ $icon_variant ] ?? $icon_paths['three-lines'];
+// Normalize against the allowlist so unknown values never reach output.
+$icon_variant = $attributes['iconVariant'] ?? 'three-lines';
+if ( ! isset( $icon_paths[ $icon_variant ] ) ) {
+	$icon_variant = 'three-lines';
+}
+
+// No manual esc_attr() here — get_block_wrapper_attributes() escapes every
+// value internally; pre-escaping double-encodes entities (e.g. "Menu & More").
+$wrapper_attributes = get_block_wrapper_attributes( array(
+	'class'                       => 'awesome-nav-toggle',
+	'type'                        => 'button',
+	'aria-label'                  => $label,
+	'aria-expanded'               => 'false',
+	'data-icon'                   => $icon_variant,
+	'data-wp-on--click'           => 'actions.toggle',
+	'data-wp-bind--aria-expanded' => 'state.isOpen',
+) );
 
 $svg = sprintf(
 	'<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="%1$d" height="%1$d" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">%2$s</svg>',
 	$icon_size,
-	$paths
+	$icon_paths[ $icon_variant ]
 );
 
 printf( '<button %1$s>%2$s</button>', $wrapper_attributes, $svg );

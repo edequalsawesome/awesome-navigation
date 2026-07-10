@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Awesome Navigation
  * Description: A floating navigation pill that expands to reveal your menu. Pushes content down at the top, floats over when scrolled. Includes frosted glass overlay patterns for WP 7.0 Navigation Overlays.
- * Version: 0.1.0
+ * Version: 2026.07.001
  * Requires at least: 7.0
  * Requires PHP: 8.0
  * Author: eD! Thomas
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'AWESOME_NAV_VERSION', '0.1.0' );
+define( 'AWESOME_NAV_VERSION', '2026.07.001' );
 define( 'AWESOME_NAV_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AWESOME_NAV_URL', plugin_dir_url( __FILE__ ) );
 
@@ -89,7 +89,10 @@ function awesome_nav_activate() {
 	}
 
 	// Set taxonomy terms directly — wp_insert_post doesn't handle these reliably.
-	wp_set_object_terms( $post_id, WP_TEMPLATE_PART_AREA_NAVIGATION_OVERLAY, 'wp_template_part_area' );
+	// Guard the constant: it ships with WP 7.0, but not every activation path
+	// enforces the "Requires at least" header (older WP-CLI, network activation).
+	$area = defined( 'WP_TEMPLATE_PART_AREA_NAVIGATION_OVERLAY' ) ? WP_TEMPLATE_PART_AREA_NAVIGATION_OVERLAY : 'navigation-overlay';
+	wp_set_object_terms( $post_id, $area, 'wp_template_part_area' );
 	wp_set_object_terms( $post_id, get_stylesheet(), 'wp_theme' );
 }
 register_activation_hook( __FILE__, 'awesome_nav_activate' );
@@ -136,6 +139,17 @@ add_action( 'enqueue_block_editor_assets', 'awesome_nav_enqueue_pill_extension' 
  * Add background color support to core/navigation-link and core/navigation-submenu.
  */
 function awesome_nav_extend_nav_link_supports( $args, $block_type ) {
+	// Register the pill's template-part attribute on core/group server-side so
+	// it's a real schema contract (REST-visible), matching the client-side
+	// blocks.registerBlockType filter in src/pill-extension/index.js.
+	if ( 'core/group' === $block_type ) {
+		$args['attributes']['menuTemplatePart'] = array(
+			'type'    => 'string',
+			'default' => '',
+		);
+		return $args;
+	}
+
 	$extend_blocks = array( 'core/navigation-link', 'core/navigation-submenu', 'core/page-list-item' );
 
 	if ( ! in_array( $block_type, $extend_blocks, true ) ) {
@@ -271,10 +285,14 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 		}
 
 		// FIX #3 (a11y): Add aria-hidden to the content area when closed.
+		// inert is the behaviorally important part — aria-hidden alone leaves
+		// links inside the collapsed panel keyboard-focusable (WCAG 2.1.1).
 		$processor2 = new WP_HTML_Tag_Processor( $block_content );
 		if ( $processor2->next_tag( array( 'class_name' => 'awesome-nav-content' ) ) ) {
 			$processor2->set_attribute( 'aria-hidden', 'true' );
+			$processor2->set_attribute( 'inert', '' );
 			$processor2->set_attribute( 'data-wp-bind--aria-hidden', '!state.isOpen' );
+			$processor2->set_attribute( 'data-wp-bind--inert', '!state.isOpen' );
 			$block_content = $processor2->get_updated_html();
 		}
 	}
@@ -301,6 +319,12 @@ function awesome_nav_template_slug_stack() {
  * Before a pill renders its inner blocks, push its template slug onto the stack.
  */
 function awesome_nav_push_template_slug( $pre_render, $parsed_block ) {
+	// If another filter already short-circuited this block, WP_Block::render()
+	// never runs, so our render_block pop would never fire — don't push.
+	if ( null !== $pre_render ) {
+		return $pre_render;
+	}
+
 	if ( 'core/group' !== $parsed_block['blockName'] ) {
 		return $pre_render;
 	}
@@ -346,6 +370,14 @@ add_filter( 'render_block', 'awesome_nav_pop_template_slug', 20, 2 );
  * The slug is escaped via esc_attr() before being passed to do_blocks().
  */
 function awesome_nav_swap_template_part( $block_content, $block ) {
+	// Re-entrancy guard: if the override part itself nests an awesome-nav-menu
+	// template part, the inner do_blocks() would re-enter this filter with the
+	// same override still on the stack — unbounded recursion.
+	static $rendering = false;
+	if ( $rendering ) {
+		return $block_content;
+	}
+
 	if ( 'core/template-part' !== $block['blockName'] ) {
 		return $block_content;
 	}
@@ -360,14 +392,27 @@ function awesome_nav_swap_template_part( $block_content, $block ) {
 		return $block_content;
 	}
 
-	$override = end( $stack );
+	// Template part slugs are post_name values — sanitize_title is the correct
+	// validator here. esc_attr() was wrong for a block-comment JSON context:
+	// it entity-encodes rather than validating, silently breaking lookups.
+	$override = sanitize_title( end( $stack ) );
 	if ( ! $override || $override === $current_slug ) {
 		return $block_content;
 	}
 
-	// Render the overridden template part (slug is escaped for the block comment).
-	$override_block = '<!-- wp:template-part {"slug":"' . esc_attr( $override ) . '","area":"navigation-overlay","tagName":"div"} /-->';
-	return do_blocks( $override_block );
+	// Render the overridden template part. wp_json_encode gives correct JSON
+	// escaping for the block-comment attribute context.
+	$attrs = wp_json_encode( array(
+		'slug'    => $override,
+		'area'    => 'navigation-overlay',
+		'tagName' => 'div',
+	) );
+
+	$rendering = true;
+	$html      = do_blocks( '<!-- wp:template-part ' . $attrs . ' /-->' );
+	$rendering = false;
+
+	return $html;
 }
 add_filter( 'render_block', 'awesome_nav_swap_template_part', 5, 2 );
 
@@ -453,6 +498,8 @@ function awesome_nav_convert_link_bg_to_variable( $block_content, $block ) {
 		// FIX #11: Remove both background-color AND background shorthand (case-insensitive).
 		$style = preg_replace( '/background(-color)?:\s*[^;]+;?\s*/i', '', $style );
 
+		// !important justified: overrides core's own inline background styles
+		// (third-party override — the exception to the no-!important rule).
 		$style = "--awesome-nav-item-color: {$color_value}; background: transparent !important; " . trim( $style );
 
 		$processor->set_attribute( 'style', trim( $style ) );

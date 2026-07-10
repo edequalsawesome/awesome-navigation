@@ -316,6 +316,14 @@
 	background: rgba(0, 0, 0, 0.04);
 }
 
+/* Themes commonly reset default focus outlines — give the injected
+   back button an explicit visible focus indicator (WCAG 2.4.7). */
+.awesome-nav-back:focus-visible {
+	opacity: 1;
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
 .awesome-nav-back::before {
 	content: "\2190";
 	font-size: 1.2em;
