@@ -16,10 +16,6 @@ const { state, actions } = store( 'awesome-navigation', {
 		isSearchOpen: false,
 		isScrolled: false,
 		submenuStack: [],
-
-		get hasOpenSubmenu() {
-			return state.submenuStack.length > 0;
-		},
 	},
 
 	actions: {
@@ -288,9 +284,17 @@ const { state, actions } = store( 'awesome-navigation', {
 							];
 						}
 						requestAnimationFrame( () => {
-							submenuContainer.classList.add(
-								'is-submenu-open'
-							);
+							// Re-check: a same-frame close (rapid toggle)
+							// runs its synchronous remove before this rAF
+							// lands — don't re-add a stale open class.
+							if (
+								target.getAttribute( 'aria-expanded' ) ===
+								'true'
+							) {
+								submenuContainer.classList.add(
+									'is-submenu-open'
+								);
+							}
 						} );
 					} else {
 						submenuContainer.classList.remove( 'is-submenu-open' );

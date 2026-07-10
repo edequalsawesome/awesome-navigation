@@ -2,7 +2,7 @@
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
   "name": "awesome-navigation/menu-toggle",
-  "version": "0.1.0",
+  "version": "2026.07.001",
   "title": "Menu Toggle",
   "category": "theme",
   "icon": "menu",
@@ -39,7 +39,7 @@
     },
     "label": {
       "type": "string",
-      "default": "Menu"
+      "default": ""
     },
     "iconVariant": {
       "type": "string",

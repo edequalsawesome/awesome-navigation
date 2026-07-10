@@ -8,96 +8,17 @@
  * the full canvas. A back button is injected to navigate back.
  */
 
-import { store, getContext, getElement } from '@wordpress/interactivity';
+import { store, getElement } from '@wordpress/interactivity';
 
-const { state, actions } = store( 'awesome-navigation', {
+// Own namespace — nav-pill.js registers 'awesome-navigation'. Sharing a
+// namespace deep-merges the stores, and function-valued keys (callbacks.init,
+// actions) are clobbered by whichever module loads last, breaking the pill.
+const { state } = store( 'awesome-navigation/overlay', {
 	state: {
 		/**
 		 * Stack of open submenu elements for nested navigation.
 		 */
-		get hasOpenSubmenu() {
-			return state.submenuStack.length > 0;
-		},
 		submenuStack: [],
-	},
-
-	actions: {
-		/**
-		 * Handle submenu open — triggered when a submenu item is clicked.
-		 * Finds the submenu container and adds it to our navigation stack.
-		 */
-		openSubmenu: () => {
-			const { ref } = getElement();
-			const submenuContainer = ref
-				.closest( '.wp-block-navigation-submenu' )
-				?.querySelector( ':scope > .wp-block-navigation__submenu-container' );
-
-			if ( ! submenuContainer ) {
-				return;
-			}
-
-			// Inject back button if not already present
-			if ( ! submenuContainer.querySelector( '.overlay-canvas-back' ) ) {
-				const backButton = document.createElement( 'button' );
-				backButton.className = 'overlay-canvas-back';
-				backButton.setAttribute( 'type', 'button' );
-				backButton.textContent = 'Back';
-				backButton.addEventListener( 'click', ( e ) => {
-					e.stopPropagation();
-					actions.closeCurrentSubmenu();
-				} );
-				submenuContainer.insertBefore(
-					backButton,
-					submenuContainer.firstChild
-				);
-			}
-
-			// Push to stack
-			state.submenuStack = [ ...state.submenuStack, submenuContainer ];
-
-			// Trigger the slide-in by adding our open class
-			requestAnimationFrame( () => {
-				submenuContainer.classList.add( 'is-menu-open' );
-			} );
-		},
-
-		/**
-		 * Close the topmost submenu in the stack.
-		 */
-		closeCurrentSubmenu: () => {
-			if ( state.submenuStack.length === 0 ) {
-				return;
-			}
-
-			const current = state.submenuStack[ state.submenuStack.length - 1 ];
-			current.classList.remove( 'is-menu-open' );
-
-			// Also trigger the core submenu close if available
-			const parentSubmenu = current.closest(
-				'.wp-block-navigation-submenu'
-			);
-			if ( parentSubmenu ) {
-				const toggle = parentSubmenu.querySelector(
-					':scope > [aria-expanded="true"]'
-				);
-				if ( toggle ) {
-					toggle.click();
-				}
-			}
-
-			// Pop from stack after transition
-			state.submenuStack = state.submenuStack.slice( 0, -1 );
-		},
-
-		/**
-		 * Close all submenus — used when the overlay itself closes.
-		 */
-		closeAllSubmenus: () => {
-			state.submenuStack.forEach( ( el ) => {
-				el.classList.remove( 'is-menu-open' );
-			} );
-			state.submenuStack = [];
-		},
 	},
 
 	callbacks: {
@@ -172,6 +93,10 @@ const { state, actions } = store( 'awesome-navigation', {
 										) {
 											target.click();
 										}
+										// Restore focus to the submenu
+										// trigger (a11y: don't strand focus
+										// behind the closing panel).
+										target.focus();
 									}
 								);
 								submenuContainer.insertBefore(
@@ -193,9 +118,16 @@ const { state, actions } = store( 'awesome-navigation', {
 							}
 
 							requestAnimationFrame( () => {
-								submenuContainer.classList.add(
-									'is-menu-open'
-								);
+								// Re-check: a same-frame close runs its
+								// synchronous remove before this rAF lands.
+								if (
+									target.getAttribute( 'aria-expanded' ) ===
+									'true'
+								) {
+									submenuContainer.classList.add(
+										'is-menu-open'
+									);
+								}
 							} );
 						} else {
 							// Submenu closed — remove from stack

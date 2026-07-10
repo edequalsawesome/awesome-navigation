@@ -148,7 +148,11 @@ export default function Edit( { attributes, setAttributes } ) {
 					/>
 				</PanelBody>
 			</InspectorControls>
-			<button { ...blockProps } type="button" aria-label={ label }>
+			<button
+				{ ...blockProps }
+				type="button"
+				aria-label={ label || __( 'Menu', 'awesome-navigation' ) }
+			>
 				<svg
 					aria-hidden="true"
 					xmlns="http://www.w3.org/2000/svg"

@@ -220,7 +220,7 @@ function TemplatePartSelector( { value, onChange } ) {
 					) }%2F%2F${ encodeURIComponent(
 						slug
 					) }&canvas=edit`;
-					window.open( editUrl, '_blank' );
+					window.open( editUrl, '_blank', 'noopener' );
 				}, 500 );
 			}
 		} catch ( error ) {
@@ -279,6 +279,7 @@ function TemplatePartSelector( { value, onChange } ) {
 							value
 						) }&canvas=edit` }
 						target="_blank"
+						rel="noopener noreferrer"
 					>
 						{ __( 'Edit', 'awesome-navigation' ) }
 					</Button>
