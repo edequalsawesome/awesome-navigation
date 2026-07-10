@@ -1,14 +1,14 @@
 === Awesome Navigation ===
 Contributors: edequalsawesome
 Tags: navigation, menu, header, overlay, blocks
-Requires at least: 7.0
+Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.0
 Stable tag: 2026.07.001
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-A floating navigation pill that expands to reveal your menu, plus frosted glass overlay patterns for WP 7.0 Navigation Overlays.
+A floating navigation pill that expands to reveal your menu. On WP 7.0+ includes frosted glass overlay patterns for Navigation Overlays.
 
 == Description ==
 
@@ -23,7 +23,9 @@ Also includes:
 == Changelog ==
 
 = 2026.07.001 =
-* Accessibility: collapsed pill content is now inert (keyboard focus can no longer reach hidden links).
+* New: Search Toggle block with an inline search panel in the pill.
+* Compatibility: minimum WordPress requirement lowered to 6.5; WP 7.0 overlay features are gated.
+* Accessibility: collapsed pill content and the search panel are now inert (keyboard focus can no longer reach hidden controls).
 * Accessibility: injected back buttons restore focus to their submenu trigger and have visible focus outlines.
 * Accessibility: reduced-motion support for overlay canvas transitions.
 * Fix: menu toggle label and icon attributes are no longer double-escaped.

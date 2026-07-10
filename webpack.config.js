@@ -10,6 +10,11 @@ module.exports = {
 			process.cwd(),
 			'src/menu-toggle/index.js'
 		),
+		// Search toggle block.
+		'search-toggle/index': path.resolve(
+			process.cwd(),
+			'src/search-toggle/index.js'
+		),
 		// Pill extension — editor-only script that hooks into core/group.
 		'pill-extension/index': path.resolve(
 			process.cwd(),

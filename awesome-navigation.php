@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: Awesome Navigation
- * Description: A floating navigation pill that expands to reveal your menu. Pushes content down at the top, floats over when scrolled. Includes frosted glass overlay patterns for WP 7.0 Navigation Overlays.
+ * Description: A floating navigation pill that expands to reveal your menu. Pushes content down at the top, floats over when scrolled. On WP 7.0+ includes frosted glass overlay patterns for Navigation Overlays.
  * Version: 2026.07.001
- * Requires at least: 7.0
+ * Requires at least: 6.5
  * Requires PHP: 8.0
  * Author: eD! Thomas
  * Author URL: https://edequalsaweso.me/development
@@ -24,6 +24,11 @@ define( 'AWESOME_NAV_URL', plugin_dir_url( __FILE__ ) );
  * in the Site Editor.
  */
 function awesome_nav_activate() {
+	// Navigation Overlay template parts require WP 7.0+.
+	if ( ! defined( 'WP_TEMPLATE_PART_AREA_NAVIGATION_OVERLAY' ) ) {
+		return;
+	}
+
 	// Check if the template part already exists.
 	$existing = get_posts( array(
 		'post_type'   => 'wp_template_part',
@@ -89,10 +94,8 @@ function awesome_nav_activate() {
 	}
 
 	// Set taxonomy terms directly — wp_insert_post doesn't handle these reliably.
-	// Guard the constant: it ships with WP 7.0, but not every activation path
-	// enforces the "Requires at least" header (older WP-CLI, network activation).
-	$area = defined( 'WP_TEMPLATE_PART_AREA_NAVIGATION_OVERLAY' ) ? WP_TEMPLATE_PART_AREA_NAVIGATION_OVERLAY : 'navigation-overlay';
-	wp_set_object_terms( $post_id, $area, 'wp_template_part_area' );
+	// Constant is guaranteed defined here by the early return above.
+	wp_set_object_terms( $post_id, WP_TEMPLATE_PART_AREA_NAVIGATION_OVERLAY, 'wp_template_part_area' );
 	wp_set_object_terms( $post_id, get_stylesheet(), 'wp_theme' );
 }
 register_activation_hook( __FILE__, 'awesome_nav_activate' );
@@ -102,6 +105,7 @@ register_activation_hook( __FILE__, 'awesome_nav_activate' );
  */
 function awesome_nav_register_blocks() {
 	register_block_type( AWESOME_NAV_DIR . 'build/menu-toggle' );
+	register_block_type( AWESOME_NAV_DIR . 'build/search-toggle' );
 
 	register_block_style( 'core/group', array(
 		'name'  => 'frosted-glass',
@@ -150,7 +154,7 @@ function awesome_nav_extend_nav_link_supports( $args, $block_type ) {
 		return $args;
 	}
 
-	$extend_blocks = array( 'core/navigation-link', 'core/navigation-submenu', 'core/page-list-item' );
+	$extend_blocks = array( 'core/navigation-link', 'core/navigation-submenu', 'core/page-list-item', 'core/home-link' );
 
 	if ( ! in_array( $block_type, $extend_blocks, true ) ) {
 		return $args;
@@ -236,9 +240,14 @@ function awesome_nav_localize_editor_data() {
 add_action( 'enqueue_block_editor_assets', 'awesome_nav_localize_editor_data' );
 
 /**
- * Enqueue editor styles (always needed in editor for preview).
+ * Enqueue editor styles via enqueue_block_assets so they load inside
+ * the iframed editor (WP 6.9+). Only loads in admin context.
  */
 function awesome_nav_enqueue_editor_assets() {
+	if ( ! is_admin() ) {
+		return;
+	}
+
 	wp_enqueue_style(
 		'awesome-navigation-pill-editor',
 		AWESOME_NAV_URL . 'assets/nav-pill.css',
@@ -253,7 +262,7 @@ function awesome_nav_enqueue_editor_assets() {
 		AWESOME_NAV_VERSION
 	);
 }
-add_action( 'enqueue_block_editor_assets', 'awesome_nav_enqueue_editor_assets' );
+add_action( 'enqueue_block_assets', 'awesome_nav_enqueue_editor_assets' );
 
 /**
  * Inject Interactivity API directives onto the nav pill markup.
@@ -281,6 +290,7 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 			$processor->set_attribute( 'data-wp-init', 'callbacks.init' );
 			$processor->set_attribute( 'data-wp-on--keydown', 'actions.handleKeydown' );
 			$processor->set_attribute( 'data-wp-class--is-open', 'state.isOpen' );
+			$processor->set_attribute( 'data-wp-class--is-search-open', 'state.isSearchOpen' );
 			$block_content = $processor->get_updated_html();
 		}
 
@@ -294,6 +304,38 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 			$processor2->set_attribute( 'data-wp-bind--aria-hidden', '!state.isOpen' );
 			$processor2->set_attribute( 'data-wp-bind--inert', '!state.isOpen' );
 			$block_content = $processor2->get_updated_html();
+		}
+
+		// Inject the search panel as a direct child of the pill.
+		// The search-toggle block's render.php stores its attributes in a global;
+		// we use them here so the panel respects the block's placeholder/label settings.
+		global $awesome_nav_search_attrs;
+		if ( ! empty( $awesome_nav_search_attrs ) ) {
+			$sa = $awesome_nav_search_attrs;
+			// inert matches the menu content treatment: aria-hidden alone
+			// leaves the search input keyboard-focusable while closed.
+			$search_panel = '<div id="awesome-nav-search-panel" class="awesome-nav-search-panel" aria-hidden="true" inert data-wp-bind--aria-hidden="!state.isSearchOpen" data-wp-bind--inert="!state.isSearchOpen">'
+				. '<form class="awesome-nav-search-form" role="search" action="' . esc_url( $sa['action'] ) . '" method="get">'
+				. '<input class="awesome-nav-search-input" type="search" name="s" placeholder="' . esc_attr( $sa['placeholder'] ) . '" aria-label="' . esc_attr( $sa['label'] ) . '" data-wp-on--keydown="actions.handleSearchKeydown" />'
+				. '<button class="awesome-nav-search-submit" type="submit" aria-label="' . esc_attr( $sa['submit_label'] ) . '">'
+				. '<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" x2="19" y1="12" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>'
+				. '</button>'
+				. '</form>'
+				. '</div>';
+
+			// Insert before the pill's closing </div>.
+			$last_div_pos = strrpos( $block_content, '</div>' );
+			if ( false !== $last_div_pos ) {
+				$block_content = substr_replace(
+					$block_content,
+					$search_panel . '</div>',
+					$last_div_pos,
+					strlen( '</div>' )
+				);
+			}
+
+			// Clear the global so it doesn't leak to other pills.
+			$awesome_nav_search_attrs = null;
 		}
 	}
 
@@ -310,7 +352,7 @@ add_filter( 'render_block', 'awesome_nav_inject_interactivity', 10, 2 );
  * use pre_render_block (which fires BEFORE inner blocks) to push the
  * slug onto the stack, and render_block to pop it after the pill is done.
  */
-function awesome_nav_template_slug_stack() {
+function &awesome_nav_template_slug_stack() {
 	static $stack = array();
 	return $stack;
 }
@@ -367,7 +409,7 @@ add_filter( 'render_block', 'awesome_nav_pop_template_slug', 20, 2 );
  *
  * Reads the current slug from the top of the stack. If set, swaps the
  * default "awesome-nav-menu" template part with the user-selected one.
- * The slug is escaped via esc_attr() before being passed to do_blocks().
+ * The slug is validated via sanitize_title() before being passed to do_blocks().
  */
 function awesome_nav_swap_template_part( $block_content, $block ) {
 	// Re-entrancy guard: if the override part itself nests an awesome-nav-menu
@@ -468,7 +510,7 @@ function awesome_nav_sanitize_css_color( $color ) {
  * Convert nav link background colors into a CSS custom property.
  */
 function awesome_nav_convert_link_bg_to_variable( $block_content, $block ) {
-	$target_blocks = array( 'core/navigation-link', 'core/navigation-submenu', 'core/page-list-item' );
+	$target_blocks = array( 'core/navigation-link', 'core/navigation-submenu', 'core/page-list-item', 'core/home-link' );
 
 	if ( ! in_array( $block['blockName'], $target_blocks, true ) ) {
 		return $block_content;

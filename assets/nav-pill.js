@@ -13,6 +13,7 @@ const SCROLL_THRESHOLD = 50;
 const { state, actions } = store( 'awesome-navigation', {
 	state: {
 		isOpen: false,
+		isSearchOpen: false,
 		isScrolled: false,
 		submenuStack: [],
 	},
@@ -27,6 +28,10 @@ const { state, actions } = store( 'awesome-navigation', {
 		},
 
 		open: () => {
+			// Close search if open.
+			if ( state.isSearchOpen ) {
+				state.isSearchOpen = false;
+			}
 			state.isOpen = true;
 
 			// FIX #6 (a11y): Move focus into the content container.
@@ -50,7 +55,17 @@ const { state, actions } = store( 'awesome-navigation', {
 		},
 
 		handleKeydown: ( event ) => {
-			if ( event.key !== 'Escape' || ! state.isOpen ) {
+			if ( event.key !== 'Escape' ) {
+				return;
+			}
+
+			// Close search first if open.
+			if ( state.isSearchOpen ) {
+				actions.closeSearch();
+				return;
+			}
+
+			if ( ! state.isOpen ) {
 				return;
 			}
 
@@ -103,6 +118,52 @@ const { state, actions } = store( 'awesome-navigation', {
 			} );
 			state.submenuStack = [];
 		},
+
+		/**
+		 * Toggle the inline search.
+		 */
+		toggleSearch: () => {
+			if ( state.isSearchOpen ) {
+				actions.closeSearch();
+			} else {
+				actions.openSearch();
+			}
+		},
+
+		openSearch: () => {
+			if ( state.isOpen ) {
+				actions.close();
+			}
+			state.isSearchOpen = true;
+
+			const { ref } = getElement();
+			requestAnimationFrame( () => {
+				const input = ref
+					.closest( '.awesome-nav-pill' )
+					?.querySelector( '.awesome-nav-search-input' );
+				if ( input ) {
+					input.focus();
+				}
+			} );
+		},
+
+		closeSearch: () => {
+			state.isSearchOpen = false;
+
+			const { ref } = getElement();
+			const btn = ref
+				.closest( '.awesome-nav-pill' )
+				?.querySelector( '.awesome-nav-search-btn' );
+			if ( btn ) {
+				btn.focus();
+			}
+		},
+
+		handleSearchKeydown: ( event ) => {
+			if ( event.key === 'Escape' ) {
+				actions.closeSearch();
+			}
+		},
 	},
 
 	callbacks: {
@@ -123,10 +184,14 @@ const { state, actions } = store( 'awesome-navigation', {
 
 			// --- Click outside (FIX #8: named handler for proper cleanup) ---
 			const handleClickOutside = ( event ) => {
-				if ( state.isOpen && ref && ! ref.contains( event.target ) ) {
+				if ( ! ref || ref.contains( event.target ) ) {
+					return;
+				}
+				if ( state.isSearchOpen ) {
+					actions.closeSearch();
+				}
+				if ( state.isOpen ) {
 					actions.close();
-
-					// Return focus to toggle after outside click closes pill.
 					const toggle = ref.querySelector(
 						'.wp-block-awesome-navigation-menu-toggle'
 					);

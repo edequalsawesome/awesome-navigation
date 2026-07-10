@@ -16,6 +16,7 @@ import {
 	ComboboxControl,
 	Button,
 	Spinner,
+	// Use experimental imports with fallback — WP.com may not have stable exports yet.
 	__experimentalHStack as HStack,
 	__experimentalSpacer as Spacer,
 } from '@wordpress/components';
@@ -26,6 +27,15 @@ import { useSelect, useDispatch } from '@wordpress/data';
 import { useState } from '@wordpress/element';
 import { pencil, plus } from '@wordpress/icons';
 import { decodeEntities } from '@wordpress/html-entities';
+
+/**
+ * Block variation removed — it inserted an empty Group without inner blocks.
+ * The "Navigation Pill" pattern (registered in patterns/nav-pill.php) provides
+ * the full structure and is discoverable via the inserter and slash commands.
+ *
+ * Instead, we just use isActive to detect existing pill blocks and show
+ * the custom icon/name in the editor for them.
+ */
 
 /**
  * Add menuTemplatePart attribute to core/group blocks.

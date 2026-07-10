@@ -1,16 +1,15 @@
 {
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
-  "name": "awesome-navigation/menu-toggle",
+  "name": "awesome-navigation/search-toggle",
   "version": "2026.07.001",
-  "title": "Menu Toggle",
+  "title": "Search Toggle",
   "category": "theme",
-  "icon": "menu",
-  "description": "A toggle button for the Awesome Navigation pill. Opens and closes the expandable menu area.",
+  "icon": "search",
+  "description": "A search button for the Awesome Navigation pill. Expands an inline search field in the topbar.",
   "keywords": [
-    "menu",
-    "hamburger",
-    "toggle",
+    "search",
+    "find",
     "navigation"
   ],
   "textdomain": "awesome-navigation",
@@ -41,9 +40,9 @@
       "type": "string",
       "default": ""
     },
-    "iconVariant": {
+    "placeholder": {
       "type": "string",
-      "default": "three-lines"
+      "default": ""
     }
   },
   "render": "file:./render.php",
