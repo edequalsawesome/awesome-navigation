@@ -34,14 +34,18 @@ const { state, actions } = store( 'awesome-navigation', {
 			}
 			state.isOpen = true;
 
-			// FIX #6 (a11y): Move focus into the content container.
+			// FIX #6 (a11y): Move focus into the content area — specifically
+			// the grid child, which is the scroll container (keyboard scroll
+			// keys walk UP from the focused element, so focusing the
+			// non-scrollable outer container would scroll the page instead).
 			const { ref } = getElement();
 			const content = ref.querySelector( '.awesome-nav-content' );
 			if ( content ) {
+				const scroller = content.firstElementChild || content;
 				// tabindex="-1" allows programmatic focus without adding to tab order.
-				content.setAttribute( 'tabindex', '-1' );
+				scroller.setAttribute( 'tabindex', '-1' );
 				requestAnimationFrame( () => {
-					content.focus( { preventScroll: true } );
+					scroller.focus( { preventScroll: true } );
 				} );
 			}
 		},

@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "awesome-navigation/search-toggle",
-	"version": "2026.07.001",
+	"version": "2026.07.002",
 	"title": "Search Toggle",
 	"category": "theme",
 	"icon": "search",

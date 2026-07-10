@@ -4,7 +4,7 @@ Tags: navigation, menu, header, overlay, blocks
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 2026.07.001
+Stable tag: 2026.07.002
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,11 @@ Also includes:
 * An "Outlined" navigation block style with per-item accent colors.
 
 == Changelog ==
+
+= 2026.07.002 =
+* Fix: removed the divider line under the pill topbar when the menu or search panel is open.
+* Fix: tall menus now scroll inside the pill on small screens instead of being cut off, without scrolling the page behind.
+* Accessibility: focus lands on the menu's scrollable region on open, so keyboard scrolling (Page Down / arrow keys) scrolls the menu, not the page.
 
 = 2026.07.001 =
 * New: Search Toggle block with an inline search panel in the pill.

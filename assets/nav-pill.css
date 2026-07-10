@@ -117,15 +117,13 @@
 	grid-template-rows: 0fr;
 	opacity: 0;
 	overflow: hidden;
-	border-top: none;
 	/* FIX #13: Static padding — let grid-template-rows do the animation,
 	   avoids layout recalc on every animation frame. */
 	padding: 0 1rem;
 
 	transition:
 		grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-		opacity 0.4s ease-out 0.1s,
-		border-top 0.3s ease-out 0.2s;
+		opacity 0.4s ease-out 0.1s;
 }
 
 .awesome-nav-content > * {
@@ -137,10 +135,17 @@
 	grid-template-rows: 1fr;
 	opacity: 1;
 	padding: 1rem 1rem 1.5rem;
-	overflow-y: auto;
 	max-height: calc(100vh - 120px);
 	max-height: calc(100dvh - 120px); /* dynamic viewport for mobile */
-	border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* The 1fr row is capped at the container's max-height, so overflow lands
+   on the grid child, not the container — the child must be the scroller.
+   (nav-pill.js focuses this child on open so keyboard scroll keys work.) */
+.awesome-nav-pill.is-open .awesome-nav-content > * {
+	overflow-y: auto;
+	overscroll-behavior: contain; /* don't chain scroll to the page behind */
+	scrollbar-gutter: stable; /* no width jump when a classic scrollbar appears */
 }
 
 /* ==========================================================================
@@ -156,7 +161,6 @@
 	grid-template-rows: 0fr;
 	opacity: 0;
 	overflow: hidden;
-	border-top: none;
 	padding: 0 1rem;
 	/* Inherit pill's colors so the panel matches the pill background */
 	background: inherit;
@@ -164,8 +168,7 @@
 
 	transition:
 		grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-		opacity 0.4s ease-out 0.1s,
-		border-top 0.3s ease-out 0.2s;
+		opacity 0.4s ease-out 0.1s;
 }
 
 .awesome-nav-search-panel > * {
@@ -173,12 +176,13 @@
 	min-height: 0;
 }
 
+/* No max-height here (unlike .awesome-nav-content) — the panel only holds a
+   one-row search form, so no scroller is needed. If this ever gains a height
+   cap or variable-height content, mirror the `> *` scroll rule above. */
 .awesome-nav-pill.is-search-open .awesome-nav-search-panel {
 	grid-template-rows: 1fr;
 	opacity: 1;
 	padding: 1rem 1rem 1.5rem;
-	overflow-y: auto;
-	border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 /* Inner content fade-in */
