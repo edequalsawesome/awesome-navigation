@@ -153,10 +153,19 @@
 }
 
 .awesome-nav-pill.is-open .awesome-nav-content {
-	/* Opening: spring the box out, then fade the contents in behind it. */
+	/*
+	 * Opening: spring the box out, then fade the contents in behind it.
+	 *
+	 * The spring is on grid-template-rows ONLY. That track resolves against
+	 * the content's own height, so overshooting past 1fr is clamped and the
+	 * curve reads as easing rather than growth. Padding is a real box
+	 * dimension with nothing to clamp it — springing it made the pill
+	 * overshoot ~4px and rock back over a third of a second, which on a
+	 * sticky header looks like the whole pill shoving upward. Ease it.
+	 */
 	transition:
 		grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-		padding 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+		padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
 		opacity 0.4s ease-out 0.1s;
 
 	grid-template-rows: 1fr;
