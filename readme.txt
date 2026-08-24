@@ -4,7 +4,7 @@ Tags: navigation, menu, header, overlay, blocks
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 2026.08.002
+Stable tag: 2026.08.003
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,6 +30,10 @@ and one Escape press dismisses both pills rather than just the inner one. There
 is no reason to nest pills, so this is documented rather than fixed.
 
 == Changelog ==
+
+= 2026.08.003 =
+* Fix: while a submenu is open over the menu, the menu behind it is no longer reachable by keyboard or screen reader. Previously you could tab onto links you could not see, including those in a second column.
+* Fix: clicking a link elsewhere on the page while the menu is open no longer yanks focus back to the menu button.
 
 = 2026.08.002 =
 * Fix: two navigation pills on the same page no longer share open/closed state — opening one no longer expands the other, and each pill's menu and search buttons now report their own state to screen readers.

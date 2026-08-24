@@ -96,9 +96,14 @@ const closePill = ( ctx, pill ) => {
 	ctx.isOpen = false;
 };
 
-const closeSearchPanel = ( ctx, pill ) => {
+// restoreFocus: return focus to the control that opened the panel. Right for a
+// deliberate dismissal (Escape, the toggle, the close button) and wrong for a
+// click elsewhere on the page — see handleClickOutside.
+const closeSearchPanel = ( ctx, pill, restoreFocus = true ) => {
 	ctx.isSearchOpen = false;
-	pill?.querySelector( '.awesome-nav-search-btn' )?.focus();
+	if ( restoreFocus ) {
+		pill?.querySelector( '.awesome-nav-search-btn' )?.focus();
+	}
 };
 
 const { actions } = store( 'awesome-navigation', {
@@ -229,14 +234,16 @@ const { actions } = store( 'awesome-navigation', {
 				if ( ! ref || ref.contains( event.target ) ) {
 					return;
 				}
+				// Close, but do NOT pull focus back to the pill. The user just
+				// clicked something else on the page — a link, a field — and
+				// yanking focus out of it is worse than the open panel was.
+				// Escape and the toggle still restore focus, because there the
+				// dismissal is deliberate and focus has nowhere else to go.
 				if ( ctx.isSearchOpen ) {
-					closeSearchPanel( ctx, ref );
+					closeSearchPanel( ctx, ref, false );
 				}
 				if ( ctx.isOpen ) {
 					closePill( ctx, ref );
-					ref.querySelector(
-						'.wp-block-awesome-navigation-menu-toggle'
-					)?.focus();
 				}
 			};
 			document.addEventListener( 'click', handleClickOutside );
@@ -343,16 +350,37 @@ const { actions } = store( 'awesome-navigation', {
 							// runs its synchronous remove before this rAF
 							// lands — don't re-add a stale open class.
 							if (
-								target.getAttribute( 'aria-expanded' ) ===
+								target.getAttribute( 'aria-expanded' ) !==
 								'true'
 							) {
-								submenuContainer.classList.add(
-									'is-submenu-open'
-								);
+								return;
 							}
+
+							submenuContainer.classList.add( 'is-submenu-open' );
+
+							// NOT moving focus into the panel here, though
+							// it covers the toggle that still holds it
+							// (WCAG 2.4.11). Every attempt raced core's own
+							// submenu focus handling and ended with focus on
+							// <body>, which is worse than leaving it on the
+							// toggle. Tracked separately rather than shipped
+							// half-working — see the Back button, which is the
+							// intended target once the interaction with core is
+							// understood.
 						} );
 					} else {
 						submenuContainer.classList.remove( 'is-submenu-open' );
+
+						// Whatever closed this panel — Back, Escape, core's own
+						// handling, or a click on the parent item — focus may
+						// still be inside it, and it is about to be hidden.
+						// Hand focus back to the control that owns it rather
+						// than letting it fall to <body>.
+						const active =
+							submenuContainer.ownerDocument.activeElement;
+						if ( submenuContainer.contains( active ) ) {
+							target.focus( { preventScroll: true } );
+						}
 					}
 				}
 			} );

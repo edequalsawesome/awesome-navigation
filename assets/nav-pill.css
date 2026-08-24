@@ -487,6 +487,58 @@
 	content: "\2192";
 }
 
+/*
+ * What an open takeover covers must not stay reachable behind it.
+ *
+ * `visibility` rather than `inert`, because it is the one property that is both
+ * inherited AND cancellable on a descendant. `inert` propagates to every
+ * flat-tree descendant with no way to exempt one, so inerting the list would
+ * take the open panel — which lives inside it — down with it. A
+ * visibility:hidden element is out of the tab order and the accessibility tree
+ * natively, and the panel's own `visibility: visible` below cancels it.
+ *
+ * Doing this in CSS rather than by toggling attributes in JS means there is no
+ * restore path to leak, no ordering hazard against core's own close handling,
+ * and no question of whose attribute it was. It is also correct on state
+ * changes the script never observes.
+ */
+
+/* Level 1: the whole menu behind the panel, which is both the open item's
+   siblings and any other column in the layout. */
+.awesome-nav-content:has(.is-submenu-open) .awesome-nav-content-inner {
+	visibility: hidden;
+}
+
+/* The open panel has its own `visibility: visible` above, but that is not enough
+   once an ancestor is hidden — measured on WP 7.1, the panel computed to hidden
+   anyway, which also made it unfocusable and broke the focus move below. Re-show
+   it explicitly from inside the covered subtree. */
+.awesome-nav-content:has( .is-submenu-open ) .awesome-nav-content-inner .is-submenu-open {
+	visibility: visible;
+
+	/* Drop visibility from the transition here. The closed state delays it by
+	   0.4s so the slide-out finishes before the panel is hidden, and that delay
+	   was still governing on the way IN: measured, the panel stayed hidden for
+	   408ms after opening. Nothing needs the delay when opening. */
+	transition-property: transform, opacity;
+}
+
+/* The open item's own toggle is the exception, and it has to be: it still holds
+   focus at the moment the rule above applies, and hiding a focused element
+   sends focus to <body> with a null relatedTarget — which core reads as "focus
+   left the submenu" and closes the panel we just opened. It stays focusable but
+   is not seen, because the opaque panel is over it. */
+.awesome-nav-pill .open-on-click:has( > .is-submenu-open ) > .wp-block-navigation-item__content {
+	visibility: visible;
+}
+
+/* Deeper levels: a panel holding an open child is itself covered, so its own
+   items and Back button go too. The child panel stays reachable because its
+   `visibility: visible` overrides what it inherits from its hidden parent. */
+.awesome-nav-pill .wp-block-navigation__submenu-container:has( .is-submenu-open ) > * {
+	visibility: hidden;
+}
+
 .awesome-nav-pill .open-on-click > .wp-block-navigation__submenu-container.is-submenu-open {
 	visibility: visible;
 	opacity: 1;
