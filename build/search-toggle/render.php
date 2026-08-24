@@ -59,6 +59,14 @@ $close_svg = sprintf(
 );
 
 // Store attributes for the main plugin's render_block filter to pick up.
+//
+// A single scalar global, so it only survives one toggle-then-pill handoff at a
+// time. That is fine for any number of SIBLING pills — each toggle renders
+// immediately before its own pill's render_block fires — but a pill nested
+// inside another pill would overwrite and consume the outer pill's attributes
+// before the outer render runs, leaving it a Search button with no panel.
+// Nesting pills is documented as unsupported (see readme.txt) rather than
+// solved with a render stack, because there is no reason to do it.
 global $awesome_nav_search_attrs;
 $awesome_nav_search_attrs = array(
 	'panel_id'     => $panel_id,

@@ -20,6 +20,15 @@ Also includes:
 * Frosted glass overlay patterns for WordPress 7.0 Navigation Overlays.
 * An "Outlined" navigation block style with per-item accent colors.
 
+More than one pill on a page is supported — each keeps its own open state, its
+own search panel, and its own toggle states.
+
+Placing a pill *inside another pill* is not supported. The Search Toggle hands
+its settings to the pill through a single global, so a nested pill overwrites
+and consumes the outer pill's, leaving the outer Search button with no panel;
+and one Escape press dismisses both pills rather than just the inner one. There
+is no reason to nest pills, so this is documented rather than fixed.
+
 == Changelog ==
 
 = 2026.08.002 =
