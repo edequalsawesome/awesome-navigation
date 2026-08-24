@@ -125,7 +125,9 @@ const { actions } = store( 'awesome-navigation', {
 			// keys walk UP from the focused element, so focusing the
 			// non-scrollable outer container would scroll the page instead).
 			const { ref } = getElement();
-			const content = ref.querySelector( '.awesome-nav-content' );
+			const content = pillOf( ref )?.querySelector(
+				'.awesome-nav-content'
+			);
 			if ( content ) {
 				const scroller = content.firstElementChild || content;
 				// tabindex="-1" allows programmatic focus without adding to tab order.
