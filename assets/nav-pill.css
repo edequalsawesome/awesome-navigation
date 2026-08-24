@@ -117,13 +117,34 @@
 	grid-template-rows: 0fr;
 	opacity: 0;
 	overflow: hidden;
-	/* FIX #13: Static padding — let grid-template-rows do the animation,
-	   avoids layout recalc on every animation frame. */
+
+	/* Containing block for the submenu canvas takeover. Without this the
+	   takeover's inset:0 resolves against whichever ancestor is closest —
+	   core puts position:relative on the nav, its <ul>, and each item, so
+	   it landed on the ~44px <li> and rendered as a sliver. This element is
+	   the right anchor: it is the visible content box, it carries the
+	   max-height cap, and its overflow:hidden clips the takeover to it. */
+	position: relative;
 	padding: 0 1rem;
 
+	/*
+	 * Closing transition. Kept separate from the opening one below because a
+	 * single symmetric transition made the close visibly stutter:
+	 *
+	 * - padding was not transitioned at all, so the 1rem/1.5rem block padding
+	 *   snapped to 0 on the first frame — a 40px jump while the menu was still
+	 *   at full opacity, read as a lurch before the collapse.
+	 * - the springy curve below overshoots past its end value. Opening, that is
+	 *   the point. Closing, it drives the row below 0fr, where it clamps: the
+	 *   collapse finished in ~190ms of a 500ms transition and then sat there.
+	 * - the 0.1s opacity delay is there to let the box start opening before the
+	 *   contents fade in. On the way out it just holds everything opaque
+	 *   through the entire collapse.
+	 */
 	transition:
-		grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-		opacity 0.4s ease-out 0.1s;
+		grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+		padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+		opacity 0.25s ease-out;
 }
 
 .awesome-nav-content > * {
@@ -132,6 +153,21 @@
 }
 
 .awesome-nav-pill.is-open .awesome-nav-content {
+	/*
+	 * Opening: spring the box out, then fade the contents in behind it.
+	 *
+	 * The spring is on grid-template-rows ONLY. That track resolves against
+	 * the content's own height, so overshooting past 1fr is clamped and the
+	 * curve reads as easing rather than growth. Padding is a real box
+	 * dimension with nothing to clamp it — springing it made the pill
+	 * overshoot ~4px and rock back over a third of a second, which on a
+	 * sticky header looks like the whole pill shoving upward. Ease it.
+	 */
+	transition:
+		grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+		padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+		opacity 0.4s ease-out 0.1s;
+
 	grid-template-rows: 1fr;
 	opacity: 1;
 	padding: 1rem 1rem 1.5rem;
@@ -185,31 +221,63 @@
 	padding: 1rem 1rem 1.5rem;
 }
 
-/* Inner content fade-in */
+/* Inner content fade-in.
+   Deliberately opacity-only: any transform here (even translateY(0)) makes
+   this element a containing block, and since it is also the scroller the
+   takeover would size to the full scroll height and scroll with the list.
+   The pill already animates open via grid-template-rows, so the 8px slide
+   this used to add was a flourish on top of an existing reveal. */
 .awesome-nav-content-inner {
 	opacity: 0;
-	transform: translateY(-8px);
-	transition:
-		opacity 0.3s ease-out 0.1s,
-		transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s;
+	/* Closing: no delay, and quicker than the box, so the contents are gone
+	   before the collapse finishes rather than being clipped mid-fade. */
+	transition: opacity 0.15s ease-out;
 }
 
 .awesome-nav-pill.is-open .awesome-nav-content-inner {
+	transition: opacity 0.3s ease-out 0.1s;
 	opacity: 1;
-	transform: translateY(0);
 }
 
 /* ==========================================================================
    Inherit pill background by default, but allow user overrides.
-   Uses a CSS custom property that cascades through any wrapper depth.
-   The :not([style*="background"]) selector skips blocks where the user
-   explicitly set a background in the Site Editor.
+
+   `inherit` copies the PARENT's computed value, so this only works as an
+   unbroken parent-to-child chain — every element between the pill and whatever
+   needs to paint has to be on this list. (It does not "cascade through any
+   wrapper depth"; a custom property would, and this is not one.)
+
+   The chain has to start at .awesome-nav-content, which is otherwise
+   transparent: without that first link every rule below inherits transparency
+   from it and the whole mechanism is a no-op. That went unnoticed because
+   nothing in the pill painted a surface — until the submenu takeover needed
+   to cover the menu behind it, and showed through instead.
+
+   The :not([style*="background"]) / :not(.has-background) guards skip blocks
+   where the user explicitly chose a background in the Site Editor.
    ========================================================================== */
 
+/*
+ * The chain can only hand down what the pill has. A pill with no background
+ * chosen is explicitly supported ("No default background — set it on the pill
+ * Group block in the editor", above), and inherits transparent — which put the
+ * root menu straight through an open takeover. Give the pill a surface only
+ * when the author has not picked one, so the chain always has something opaque
+ * to carry and an author's own choice still wins.
+ */
+.awesome-nav-pill:not(.has-background):not([style*="background"]) {
+	background-color: var( --wp--preset--color--base, #fff );
+}
+
+.awesome-nav-content,
+.awesome-nav-content-inner,
 .awesome-nav-content .wp-block-template-part:not([style*="background"]),
 .awesome-nav-content .wp-block-group:not([style*="background"]):not(.has-background),
 .awesome-nav-content .wp-block-columns:not([style*="background"]):not(.has-background),
-.awesome-nav-content .wp-block-column:not([style*="background"]):not(.has-background) {
+.awesome-nav-content .wp-block-column:not([style*="background"]):not(.has-background),
+.awesome-nav-content .wp-block-navigation:not([style*="background"]):not(.has-background),
+.awesome-nav-content .wp-block-navigation__container:not([style*="background"]):not(.has-background),
+.awesome-nav-content .wp-block-navigation-item:not([style*="background"]):not(.has-background) {
 	background: inherit !important;
 }
 
@@ -318,21 +386,85 @@
    Submenu Canvas Takeover
    ========================================================================== */
 
-.awesome-nav-pill .wp-block-navigation__submenu-container {
+/*
+ * The canvas takeover only applies in core's "click" submenu mode. Ungated,
+ * hover and always modes got the takeover's positioning without anything to
+ * open it: core made the submenu visible, this stylesheet translated it
+ * outside the content area, and overflow:hidden erased it. Gate on core's own
+ * class so those modes keep core's dropdown behaviour untouched.
+ *
+ * The gate is a CONTRACT SHARED WITH nav-pill.js, which keys its
+ * aria-expanded observer on the same `open-on-click` class. Both sides must
+ * agree, because neither of the obvious alternatives works:
+ *
+ * - aria-expanded alone is not a click-mode signal. Core renders a submenu
+ *   indicator button carrying aria-expanded in hover and always modes too,
+ *   whenever showSubmenuIcon is on — which is its default. Keying the script
+ *   on that put a "Back to X" button inside an ordinary dropdown.
+ * - `wp-block-navigation-submenu` alone does not cover every submenu.
+ *   core/page-list emits `open-on-click` without it, so keying the script on
+ *   that class left Page List panels styled as a takeover nothing opened.
+ *
+ * Mode classes come from block_core_navigation_submenu() and page-list's
+ * renderer: open-on-click / open-on-hover-click / open-always. Hover without
+ * indicators gets no mode class at all, so open-on-click is the only positive
+ * signal for click mode.
+ */
+
+/*
+ * Core anchors submenus to their own item: position:relative sits on
+ * .wp-block-navigation (which the <ul> also carries), on each nav item, and on
+ * .wp-block-navigation-submenu. The takeover needs inset:0 to resolve against
+ * .awesome-nav-content instead, so the whole chain goes static — otherwise it
+ * lands on the ~44px <li> and renders as a sliver.
+ *
+ * Specificity, not print order, decides this: core's rules are (0,1,0) and
+ * (0,2,0), and on a block theme this sheet is not guaranteed to print after
+ * core's inline block-library styles. :has() takes the specificity of its
+ * argument, so these land at (0,3,0)/(0,4,0) and win outright.
+ */
+.awesome-nav-pill .wp-block-navigation:has(.open-on-click),
+.awesome-nav-pill .wp-block-navigation:has(.open-on-click) .wp-block-navigation-item,
+.awesome-nav-pill .wp-block-navigation:has(.open-on-click) .wp-block-navigation-submenu {
+	position: static;
+}
+
+.awesome-nav-pill .open-on-click > .wp-block-navigation__submenu-container {
 	position: absolute !important;
 	top: 0 !important;
 	left: 0 !important;
 	right: 0 !important;
 	bottom: 0 !important;
-	width: 100% !important;
+	/* No width here: left+right already size the box. Setting width as well
+	   over-constrains it, and core's padding then pushed it 16px past the
+	   content area, where overflow:hidden clipped the right edge. */
 	min-width: unset !important;
+	box-sizing: border-box;
 	z-index: 10;
 
-	transform: translateX(100%);
+	/* The takeover is capped at the content area's height, so a submenu with
+	   more items than fit has to scroll on its own. !important because core's
+	   open-state rule (the [aria-expanded="true"] sibling selector) lands at
+	   (0,5,0) and sets overflow-y:visible — nothing this file can select beats
+	   that on specificity alone. */
+	overflow-y: auto !important;
+	overscroll-behavior: contain;
+
+	/*
+	 * visibility, not transform alone, is what hides a closed takeover. It now
+	 * covers the entire content area, and an opacity:0 element still swallows
+	 * clicks — so relying on translateX would leave an invisible sheet over the
+	 * whole menu. That is not hypothetical: the reduced-motion block below sets
+	 * transform:none, which would strip the only thing holding it off-canvas.
+	 * The 0.4s delay lets the slide-out finish before it is hidden.
+	 */
+	visibility: hidden;
 	opacity: 0;
+	transform: translateX(100%);
 	transition:
 		transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
-		opacity 0.3s ease;
+		opacity 0.3s ease,
+		visibility 0s linear 0.4s;
 
 	display: flex !important;
 	flex-direction: column;
@@ -345,9 +477,41 @@
 	border-radius: 0 !important;
 }
 
-.awesome-nav-pill .wp-block-navigation__submenu-container.is-submenu-open {
-	transform: translateX(0);
+/* Drilling in reads start-to-end, so in RTL the panel enters from the left
+   and the back arrow points the other way. */
+[dir="rtl"] .awesome-nav-pill .open-on-click > .wp-block-navigation__submenu-container {
+	transform: translateX(-100%);
+}
+
+[dir="rtl"] .awesome-nav-back::before {
+	content: "\2192";
+}
+
+.awesome-nav-pill .open-on-click > .wp-block-navigation__submenu-container.is-submenu-open {
+	visibility: visible;
 	opacity: 1;
+	transform: translateX(0);
+	transition:
+		transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+		opacity 0.3s ease,
+		visibility 0s;
+}
+
+/*
+ * Editor canvas only. This stylesheet is enqueued into the iframed editor as
+ * well as the front end, but nav-pill.js is not — nothing there ever applies
+ * .is-submenu-open, so the takeover's transform would strand a submenu the
+ * author is trying to edit outside the visible canvas. Worse after the
+ * containing-block fix than before it: the offset is now the full content
+ * width rather than a ~44px item. Core already forces a selected submenu
+ * visible in the canvas; stay out of its way and let it position normally.
+ */
+.editor-styles-wrapper .awesome-nav-pill .open-on-click > .wp-block-navigation__submenu-container {
+	position: static !important;
+	transform: none;
+	visibility: visible;
+	opacity: 1;
+	overflow-y: visible !important;
 }
 
 .awesome-nav-pill .wp-block-navigation__submenu-icon {
@@ -439,7 +603,7 @@
 	.awesome-nav-content,
 	.awesome-nav-content-inner,
 	.awesome-nav-search-panel,
-	.awesome-nav-pill .wp-block-navigation__submenu-container,
+	.awesome-nav-pill .open-on-click > .wp-block-navigation__submenu-container,
 	.awesome-nav-back,
 	.awesome-nav-pill .wp-block-navigation__submenu-icon,
 	.awesome-nav-pill .wp-block-navigation-item__content,
@@ -447,11 +611,9 @@
 		transition: none !important;
 	}
 
-	.awesome-nav-content-inner {
-		transform: none !important;
-	}
-
-	.awesome-nav-pill .wp-block-navigation__submenu-container {
+	/* Safe only because visibility, not transform, is what hides a closed
+	   takeover — see the takeover rule above. */
+	.awesome-nav-pill .open-on-click > .wp-block-navigation__submenu-container {
 		transform: none !important;
 	}
 }

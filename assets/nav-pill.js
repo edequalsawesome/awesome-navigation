@@ -100,9 +100,9 @@ const { state, actions } = store( 'awesome-navigation', {
 				state.submenuStack[ state.submenuStack.length - 1 ];
 			current.classList.remove( 'is-submenu-open' );
 
-			const parentSubmenu = current.closest(
-				'.wp-block-navigation-submenu'
-			);
+			// Same contract as the observer above — `open-on-click`, so
+			// core/page-list toggles close correctly too.
+			const parentSubmenu = current.closest( '.open-on-click' );
 			if ( parentSubmenu ) {
 				const toggle = parentSubmenu.querySelector(
 					':scope > [aria-expanded="true"]'
@@ -117,9 +117,25 @@ const { state, actions } = store( 'awesome-navigation', {
 		},
 
 		closeAllSubmenus: () => {
-			state.submenuStack.forEach( ( el ) => {
-				el.classList.remove( 'is-submenu-open' );
-			} );
+			// Deepest-first: clearing only the plugin's class left core's
+			// toggle still reporting aria-expanded="true", so on reopen the
+			// submenu was hidden while its toggle announced "expanded" and
+			// the next activation appeared to do nothing.
+			state.submenuStack
+				.slice()
+				.reverse()
+				.forEach( ( el ) => {
+					el.classList.remove( 'is-submenu-open' );
+					el.scrollTop = 0;
+
+					const item = el.closest( '.open-on-click' );
+					const toggle = item?.querySelector(
+						':scope > [aria-expanded="true"]'
+					);
+					if ( toggle ) {
+						toggle.click();
+					}
+				} );
 			state.submenuStack = [];
 		},
 
@@ -219,9 +235,20 @@ const { state, actions } = store( 'awesome-navigation', {
 					const target = mutation.target;
 					const isExpanded =
 						target.getAttribute( 'aria-expanded' ) === 'true';
-					const submenuItem = target.closest(
-						'.wp-block-navigation-submenu'
-					);
+					// Key off core's own click-mode class, which is exactly
+					// what the takeover CSS is gated on — the two must agree
+					// on which submenus qualify or they break each other:
+					//
+					// - core/page-list items get `open-on-click` but NOT
+					//   `wp-block-navigation-submenu`, so matching on the
+					//   latter left their panels styled as a takeover that
+					//   nothing ever opened — stuck off-canvas.
+					// - hover and always modes DO expose `aria-expanded`, on
+					//   the submenu indicator button core renders when
+					//   showSubmenuIcon is on (its default). Matching those
+					//   injected a "Back to X" button into an ordinary
+					//   dropdown that the CSS correctly refuses to take over.
+					const submenuItem = target.closest( '.open-on-click' );
 					if ( ! submenuItem ) {
 						continue;
 					}
@@ -287,6 +314,24 @@ const { state, actions } = store( 'awesome-navigation', {
 								submenuContainer,
 							];
 						}
+						// A takeover is absolutely positioned against its
+						// nearest positioned ancestor. For a nested panel
+						// that ancestor is the PARENT panel, which is itself
+						// a scroller — so if the parent is scrolled, the
+						// child opens offset by that scrollTop and can land
+						// wholly out of view. Resetting the parent (which the
+						// child is about to cover anyway) keeps the two
+						// aligned. Resetting the panel's own scroll also
+						// means reopening a long submenu starts at the top
+						// rather than wherever it was left.
+						submenuContainer.scrollTop = 0;
+						const parentScroller = submenuItem.closest(
+							'.wp-block-navigation__submenu-container'
+						);
+						if ( parentScroller ) {
+							parentScroller.scrollTop = 0;
+						}
+
 						requestAnimationFrame( () => {
 							// Re-check: a same-frame close (rapid toggle)
 							// runs its synchronous remove before this rAF
