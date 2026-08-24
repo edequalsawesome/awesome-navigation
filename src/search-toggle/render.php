@@ -26,22 +26,16 @@ $placeholder = ( $attributes['placeholder'] ?? '' ) ?: __( 'Search...', 'awesome
 
 // No manual esc_attr() here — get_block_wrapper_attributes() escapes every
 // value internally; pre-escaping double-encodes entities.
-// One ID per rendered toggle. A page may hold more than one pill, and every
-// toggle used to point aria-controls at the same 'awesome-nav-search-panel',
-// so the second pill's button described the first pill's hidden panel.
-//
-// wp_unique_id() rather than a static counter: block templates are require'd
-// into a shared closure, where `static` does not reliably increment per render.
-// The same value is handed to the render_block filter below, which stamps it
-// on the panel it injects, keeping the pair in sync.
-$panel_id = wp_unique_id( 'awesome-nav-search-panel-' );
-
 $wrapper_attributes = get_block_wrapper_attributes( array(
 	'class'                       => 'awesome-nav-search-btn',
 	'type'                        => 'button',
 	'aria-label'                  => $label,
 	'aria-expanded'               => 'false',
-	'aria-controls'               => $panel_id,
+	// No aria-controls here. The pill owns the panel — it injects exactly one
+	// per pill and stamps the matching id on every search button inside itself.
+	// Minting an id per TOGGLE looked right but breaks as soon as a pill holds
+	// two of them: only the last one's panel is injected, and the earlier
+	// buttons point at an id no element carries.
 	'data-wp-on--click'           => 'actions.toggleSearch',
 	'data-wp-bind--aria-expanded' => 'context.isSearchOpen',
 ) );
@@ -69,7 +63,6 @@ $close_svg = sprintf(
 // solved with a render stack, because there is no reason to do it.
 global $awesome_nav_search_attrs;
 $awesome_nav_search_attrs = array(
-	'panel_id'     => $panel_id,
 	'placeholder'  => $placeholder,
 	'label'        => $label,
 	'submit_label' => __( 'Submit search', 'awesome-navigation' ),

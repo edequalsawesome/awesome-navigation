@@ -314,9 +314,12 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 			$sa = $awesome_nav_search_attrs;
 			// inert matches the menu content treatment: aria-hidden alone
 			// leaves the search input keyboard-focusable while closed.
-			// The toggle generated this ID and points aria-controls at it; use
-			// the same one here so each pill's button describes its own panel.
-			$panel_id = $sa['panel_id'] ?? 'awesome-nav-search-panel';
+			// The pill owns the panel, so the pill mints its id and stamps it
+			// on its own search buttons below. Per-pill rather than a single
+			// static id, because a page may hold more than one pill and every
+			// button pointing at the same id had the second pill's button
+			// describing the first pill's hidden panel.
+			$panel_id     = wp_unique_id( 'awesome-nav-search-panel-' );
 			$search_panel = '<div id="' . esc_attr( $panel_id ) . '" class="awesome-nav-search-panel" aria-hidden="true" inert data-wp-bind--aria-hidden="!context.isSearchOpen" data-wp-bind--inert="!context.isSearchOpen">'
 				. '<form class="awesome-nav-search-form" role="search" action="' . esc_url( $sa['action'] ) . '" method="get">'
 				. '<input class="awesome-nav-search-input" type="search" name="s" placeholder="' . esc_attr( $sa['placeholder'] ) . '" aria-label="' . esc_attr( $sa['label'] ) . '" data-wp-on--keydown="actions.handleSearchKeydown" />'
@@ -325,6 +328,16 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 				. '</button>'
 				. '</form>'
 				. '</div>';
+
+			// Point every search button in THIS pill at the panel just built.
+			// Doing it here rather than in the toggle's own render is what makes
+			// two toggles in one pill work: they all resolve to the one panel
+			// this pill actually injects.
+			$buttons = new WP_HTML_Tag_Processor( $block_content );
+			while ( $buttons->next_tag( array( 'class_name' => 'awesome-nav-search-btn' ) ) ) {
+				$buttons->set_attribute( 'aria-controls', $panel_id );
+			}
+			$block_content = $buttons->get_updated_html();
 
 			// Insert before the pill's closing </div>.
 			$last_div_pos = strrpos( $block_content, '</div>' );
