@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Awesome Navigation
  * Description: A floating navigation pill that expands to reveal your menu. Pushes content down at the top, floats over when scrolled. On WP 7.0+ includes frosted glass overlay patterns for Navigation Overlays.
- * Version: 2026.08.001
+ * Version: 2026.08.002
  * Requires at least: 6.5
  * Requires PHP: 8.0
  * Author: eD! Thomas
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'AWESOME_NAV_VERSION', '2026.08.001' );
+define( 'AWESOME_NAV_VERSION', '2026.08.002' );
 define( 'AWESOME_NAV_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AWESOME_NAV_URL', plugin_dir_url( __FILE__ ) );
 
@@ -286,11 +286,11 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 		$processor = new WP_HTML_Tag_Processor( $block_content );
 		if ( $processor->next_tag( array( 'class_name' => 'awesome-nav-pill' ) ) ) {
 			$processor->set_attribute( 'data-wp-interactive', 'awesome-navigation' );
-			$processor->set_attribute( 'data-wp-context', '{"isOpen":false}' );
+			$processor->set_attribute( 'data-wp-context', '{"isOpen":false,"isSearchOpen":false}' );
 			$processor->set_attribute( 'data-wp-init', 'callbacks.init' );
 			$processor->set_attribute( 'data-wp-on--keydown', 'actions.handleKeydown' );
-			$processor->set_attribute( 'data-wp-class--is-open', 'state.isOpen' );
-			$processor->set_attribute( 'data-wp-class--is-search-open', 'state.isSearchOpen' );
+			$processor->set_attribute( 'data-wp-class--is-open', 'context.isOpen' );
+			$processor->set_attribute( 'data-wp-class--is-search-open', 'context.isSearchOpen' );
 			$block_content = $processor->get_updated_html();
 		}
 
@@ -301,8 +301,8 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 		if ( $processor2->next_tag( array( 'class_name' => 'awesome-nav-content' ) ) ) {
 			$processor2->set_attribute( 'aria-hidden', 'true' );
 			$processor2->set_attribute( 'inert', '' );
-			$processor2->set_attribute( 'data-wp-bind--aria-hidden', '!state.isOpen' );
-			$processor2->set_attribute( 'data-wp-bind--inert', '!state.isOpen' );
+			$processor2->set_attribute( 'data-wp-bind--aria-hidden', '!context.isOpen' );
+			$processor2->set_attribute( 'data-wp-bind--inert', '!context.isOpen' );
 			$block_content = $processor2->get_updated_html();
 		}
 
@@ -314,7 +314,10 @@ function awesome_nav_inject_interactivity( $block_content, $block ) {
 			$sa = $awesome_nav_search_attrs;
 			// inert matches the menu content treatment: aria-hidden alone
 			// leaves the search input keyboard-focusable while closed.
-			$search_panel = '<div id="awesome-nav-search-panel" class="awesome-nav-search-panel" aria-hidden="true" inert data-wp-bind--aria-hidden="!state.isSearchOpen" data-wp-bind--inert="!state.isSearchOpen">'
+			// The toggle generated this ID and points aria-controls at it; use
+			// the same one here so each pill's button describes its own panel.
+			$panel_id = $sa['panel_id'] ?? 'awesome-nav-search-panel';
+			$search_panel = '<div id="' . esc_attr( $panel_id ) . '" class="awesome-nav-search-panel" aria-hidden="true" inert data-wp-bind--aria-hidden="!context.isSearchOpen" data-wp-bind--inert="!context.isSearchOpen">'
 				. '<form class="awesome-nav-search-form" role="search" action="' . esc_url( $sa['action'] ) . '" method="get">'
 				. '<input class="awesome-nav-search-input" type="search" name="s" placeholder="' . esc_attr( $sa['placeholder'] ) . '" aria-label="' . esc_attr( $sa['label'] ) . '" data-wp-on--keydown="actions.handleSearchKeydown" />'
 				. '<button class="awesome-nav-search-submit" type="submit" aria-label="' . esc_attr( $sa['submit_label'] ) . '">'

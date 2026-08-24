@@ -26,14 +26,24 @@ $placeholder = ( $attributes['placeholder'] ?? '' ) ?: __( 'Search...', 'awesome
 
 // No manual esc_attr() here — get_block_wrapper_attributes() escapes every
 // value internally; pre-escaping double-encodes entities.
+// One ID per rendered toggle. A page may hold more than one pill, and every
+// toggle used to point aria-controls at the same 'awesome-nav-search-panel',
+// so the second pill's button described the first pill's hidden panel.
+//
+// wp_unique_id() rather than a static counter: block templates are require'd
+// into a shared closure, where `static` does not reliably increment per render.
+// The same value is handed to the render_block filter below, which stamps it
+// on the panel it injects, keeping the pair in sync.
+$panel_id = wp_unique_id( 'awesome-nav-search-panel-' );
+
 $wrapper_attributes = get_block_wrapper_attributes( array(
 	'class'                       => 'awesome-nav-search-btn',
 	'type'                        => 'button',
 	'aria-label'                  => $label,
 	'aria-expanded'               => 'false',
-	'aria-controls'               => 'awesome-nav-search-panel',
+	'aria-controls'               => $panel_id,
 	'data-wp-on--click'           => 'actions.toggleSearch',
-	'data-wp-bind--aria-expanded' => 'state.isSearchOpen',
+	'data-wp-bind--aria-expanded' => 'context.isSearchOpen',
 ) );
 
 // Search icon (magnifying glass).
@@ -51,6 +61,7 @@ $close_svg = sprintf(
 // Store attributes for the main plugin's render_block filter to pick up.
 global $awesome_nav_search_attrs;
 $awesome_nav_search_attrs = array(
+	'panel_id'     => $panel_id,
 	'placeholder'  => $placeholder,
 	'label'        => $label,
 	'submit_label' => __( 'Submit search', 'awesome-navigation' ),

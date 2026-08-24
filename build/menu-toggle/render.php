@@ -40,7 +40,7 @@ $wrapper_attributes = get_block_wrapper_attributes( array(
 	'aria-expanded'               => 'false',
 	'data-icon'                   => $icon_variant,
 	'data-wp-on--click'           => 'actions.toggle',
-	'data-wp-bind--aria-expanded' => 'state.isOpen',
+	'data-wp-bind--aria-expanded' => 'context.isOpen',
 ) );
 
 $svg = sprintf(

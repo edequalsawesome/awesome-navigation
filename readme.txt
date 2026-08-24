@@ -4,7 +4,7 @@ Tags: navigation, menu, header, overlay, blocks
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 2026.08.001
+Stable tag: 2026.08.002
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,12 @@ Also includes:
 * An "Outlined" navigation block style with per-item accent colors.
 
 == Changelog ==
+
+= 2026.08.002 =
+* Fix: two navigation pills on the same page no longer share open/closed state — opening one no longer expands the other, and each pill's menu and search buttons now report their own state to screen readers.
+* Fix: each pill's search button now points at its own search panel instead of every button describing the first one.
+* Fix: opening the menu now moves focus into it as intended. The focus step had been targeting the wrong element and never ran.
+* Removed: an unused scroll-tracking listener that ran on every scroll without affecting anything.
 
 = 2026.08.001 =
 * Fix: an open submenu now fills the pill's menu area as intended, instead of collapsing into a thin sliver.
