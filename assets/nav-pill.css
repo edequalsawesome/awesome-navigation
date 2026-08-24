@@ -125,13 +125,26 @@
 	   the right anchor: it is the visible content box, it carries the
 	   max-height cap, and its overflow:hidden clips the takeover to it. */
 	position: relative;
-	/* FIX #13: Static padding — let grid-template-rows do the animation,
-	   avoids layout recalc on every animation frame. */
 	padding: 0 1rem;
 
+	/*
+	 * Closing transition. Kept separate from the opening one below because a
+	 * single symmetric transition made the close visibly stutter:
+	 *
+	 * - padding was not transitioned at all, so the 1rem/1.5rem block padding
+	 *   snapped to 0 on the first frame — a 40px jump while the menu was still
+	 *   at full opacity, read as a lurch before the collapse.
+	 * - the springy curve below overshoots past its end value. Opening, that is
+	 *   the point. Closing, it drives the row below 0fr, where it clamps: the
+	 *   collapse finished in ~190ms of a 500ms transition and then sat there.
+	 * - the 0.1s opacity delay is there to let the box start opening before the
+	 *   contents fade in. On the way out it just holds everything opaque
+	 *   through the entire collapse.
+	 */
 	transition:
-		grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-		opacity 0.4s ease-out 0.1s;
+		grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+		padding 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+		opacity 0.25s ease-out;
 }
 
 .awesome-nav-content > * {
@@ -140,6 +153,12 @@
 }
 
 .awesome-nav-pill.is-open .awesome-nav-content {
+	/* Opening: spring the box out, then fade the contents in behind it. */
+	transition:
+		grid-template-rows 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+		padding 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+		opacity 0.4s ease-out 0.1s;
+
 	grid-template-rows: 1fr;
 	opacity: 1;
 	padding: 1rem 1rem 1.5rem;
@@ -201,10 +220,13 @@
    this used to add was a flourish on top of an existing reveal. */
 .awesome-nav-content-inner {
 	opacity: 0;
-	transition: opacity 0.3s ease-out 0.1s;
+	/* Closing: no delay, and quicker than the box, so the contents are gone
+	   before the collapse finishes rather than being clipped mid-fade. */
+	transition: opacity 0.15s ease-out;
 }
 
 .awesome-nav-pill.is-open .awesome-nav-content-inner {
+	transition: opacity 0.3s ease-out 0.1s;
 	opacity: 1;
 }
 

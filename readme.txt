@@ -33,6 +33,7 @@ Also includes:
 * Fix: drilling into a nested submenu after scrolling no longer opens it out of view.
 * Fix: submenus now slide in from the correct side, with a correctly-pointing Back arrow, in right-to-left languages.
 * Fix: editing a menu in the Site Editor no longer pushes an open submenu outside the canvas.
+* Fix: closing the menu no longer stutters. The pill's padding was not animated, so it vanished in a single frame at the start of the close while the menu was still fully visible.
 * Change: a pill with no background colour set now falls back to the theme's base colour instead of being transparent. Set a background on the pill Group block to override it.
 
 = 2026.07.002 =
