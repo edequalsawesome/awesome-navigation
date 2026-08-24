@@ -4,7 +4,7 @@ Tags: navigation, menu, header, overlay, blocks
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 2026.07.002
+Stable tag: 2026.08.001
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,19 @@ Also includes:
 * An "Outlined" navigation block style with per-item accent colors.
 
 == Changelog ==
+
+= 2026.08.001 =
+* Fix: an open submenu now fills the pill's menu area as intended, instead of collapsing into a thin sliver.
+* Fix: an open submenu now paints a solid surface, so the menu behind it no longer shows through it.
+* Fix: submenus are no longer pushed off-screen when a Navigation block uses the "Open on hover" or "Always open" submenu setting — those keep WordPress's own submenu behaviour.
+* Fix: submenus inside a Page List block now open correctly instead of staying hidden off-screen.
+* Fix: a stray "Back" button no longer appears inside ordinary dropdowns when submenu indicator icons are enabled.
+* Fix: closing the pill while a submenu is open no longer leaves that submenu's toggle reporting itself as expanded, which made the next click appear to do nothing.
+* Fix: a submenu with more items than fit now scrolls inside the pill instead of being cut off, and reopens scrolled to the top.
+* Fix: drilling into a nested submenu after scrolling no longer opens it out of view.
+* Fix: submenus now slide in from the correct side, with a correctly-pointing Back arrow, in right-to-left languages.
+* Fix: editing a menu in the Site Editor no longer pushes an open submenu outside the canvas.
+* Change: a pill with no background colour set now falls back to the theme's base colour instead of being transparent. Set a background on the pill Group block to override it.
 
 = 2026.07.002 =
 * Fix: removed the divider line under the pill topbar when the menu or search panel is open.
