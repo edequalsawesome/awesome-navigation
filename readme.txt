@@ -4,7 +4,7 @@ Tags: navigation, menu, header, overlay, blocks
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 2026.08.001
+Stable tag: 2026.08.002
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,7 +20,22 @@ Also includes:
 * Frosted glass overlay patterns for WordPress 7.0 Navigation Overlays.
 * An "Outlined" navigation block style with per-item accent colors.
 
+More than one pill on a page is supported — each keeps its own open state, its
+own search panel, and its own toggle states.
+
+Placing a pill *inside another pill* is not supported. The Search Toggle hands
+its settings to the pill through a single global, so a nested pill overwrites
+and consumes the outer pill's, leaving the outer Search button with no panel;
+and one Escape press dismisses both pills rather than just the inner one. There
+is no reason to nest pills, so this is documented rather than fixed.
+
 == Changelog ==
+
+= 2026.08.002 =
+* Fix: two navigation pills on the same page no longer share open/closed state — opening one no longer expands the other, and each pill's menu and search buttons now report their own state to screen readers.
+* Fix: each pill's search button now points at its own search panel instead of every button describing the first one.
+* Fix: opening the menu now moves focus into it as intended. The focus step had been targeting the wrong element and never ran.
+* Removed: an unused scroll-tracking listener that ran on every scroll without affecting anything.
 
 = 2026.08.001 =
 * Fix: an open submenu now fills the pill's menu area as intended, instead of collapsing into a thin sliver.

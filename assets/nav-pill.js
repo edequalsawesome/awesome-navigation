@@ -2,25 +2,109 @@
  * Awesome Navigation - Nav Pill
  *
  * Interactivity API store for the floating navigation pill.
- * Handles expand/collapse, scroll tracking, submenu panel navigation,
- * and focus management.
+ * Handles expand/collapse, submenu panel navigation, and focus management.
+ *
+ * Open/search state lives in per-element context, not global store state: two
+ * pills on one page share the store, so a global `isOpen` opened and closed
+ * every pill at once.
  */
 
-import { store, getElement } from '@wordpress/interactivity';
+import { store, getContext, getElement } from '@wordpress/interactivity';
 
-const SCROLL_THRESHOLD = 50;
+/**
+ * The pill a directive fired inside. `getElement().ref` is the toggle button
+ * for the toggle blocks and the pill itself for pill-level directives, and
+ * `closest()` collapses both to the same answer.
+ *
+ * @param {Element} ref Element the directive is bound to.
+ * @return {Element|null} The enclosing pill, if any.
+ */
+const pillOf = ( ref ) => ref?.closest( '.awesome-nav-pill' );
 
-const { state, actions } = store( 'awesome-navigation', {
-	state: {
-		isOpen: false,
-		isSearchOpen: false,
-		isScrolled: false,
-		submenuStack: [],
-	},
+/**
+ * Neither toggle block restricts placement, so one can sit outside a pill with
+ * no context provider above it. Falling back to a throwaway object leaves that
+ * button dead rather than throwing on every click.
+ *
+ * @return {Object} The pill's context, or a scratch object.
+ */
+const pillContext = () => getContext() ?? {};
 
+/**
+ * Submenu panels currently open inside a pill, deepest last (a nested panel is
+ * a DOM descendant of its parent, so document order sorts them).
+ *
+ * Derived rather than tracked in a stack: the DOM already holds this truth
+ * synchronously and a stack has to be kept honest at five separate sites.
+ * Keyed on core's `aria-expanded` rather than our own `.is-submenu-open`,
+ * which is applied a frame late and so lags the real state.
+ *
+ * @param {Element|null} pill The pill to search.
+ * @return {Element[]} Open submenu containers.
+ */
+const openPanels = ( pill ) => [
+	...( pill?.querySelectorAll(
+		'.open-on-click:has(> [aria-expanded="true"]) > .wp-block-navigation__submenu-container'
+	) ?? [] ),
+];
+
+/**
+ * Core's own toggle for a panel — `open-on-click`, so core/page-list toggles
+ * are matched too.
+ *
+ * @param {Element} panel An open submenu container.
+ * @return {Element|null} The expanded toggle that owns it.
+ */
+const expandedToggle = ( panel ) =>
+	panel
+		.closest( '.open-on-click' )
+		?.querySelector( ':scope > [aria-expanded="true"]' );
+
+const closeTopSubmenu = ( pill ) => {
+	const panels = openPanels( pill );
+	const current = panels[ panels.length - 1 ];
+	if ( ! current ) {
+		return;
+	}
+
+	current.classList.remove( 'is-submenu-open' );
+
+	const toggle = expandedToggle( current );
+	if ( toggle ) {
+		toggle.click();
+		toggle.focus();
+	}
+};
+
+const closeAllSubmenus = ( pill ) => {
+	// Deepest-first: clearing only the plugin's class left core's toggle
+	// still reporting aria-expanded="true", so on reopen the submenu was
+	// hidden while its toggle announced "expanded" and the next activation
+	// appeared to do nothing.
+	openPanels( pill )
+		.reverse()
+		.forEach( ( el ) => {
+			el.classList.remove( 'is-submenu-open' );
+			el.scrollTop = 0;
+			expandedToggle( el )?.click();
+		} );
+};
+
+const closePill = ( ctx, pill ) => {
+	// FIX #4 (a11y): Close submenus first on Escape, then close pill.
+	closeAllSubmenus( pill );
+	ctx.isOpen = false;
+};
+
+const closeSearchPanel = ( ctx, pill ) => {
+	ctx.isSearchOpen = false;
+	pill?.querySelector( '.awesome-nav-search-btn' )?.focus();
+};
+
+const { actions } = store( 'awesome-navigation', {
 	actions: {
 		toggle: () => {
-			if ( state.isOpen ) {
+			if ( pillContext().isOpen ) {
 				actions.close();
 			} else {
 				actions.open();
@@ -28,18 +112,22 @@ const { state, actions } = store( 'awesome-navigation', {
 		},
 
 		open: () => {
+			const ctx = pillContext();
+
 			// Close search if open.
-			if ( state.isSearchOpen ) {
-				state.isSearchOpen = false;
+			if ( ctx.isSearchOpen ) {
+				ctx.isSearchOpen = false;
 			}
-			state.isOpen = true;
+			ctx.isOpen = true;
 
 			// FIX #6 (a11y): Move focus into the content area — specifically
 			// the grid child, which is the scroll container (keyboard scroll
 			// keys walk UP from the focused element, so focusing the
 			// non-scrollable outer container would scroll the page instead).
 			const { ref } = getElement();
-			const content = ref.querySelector( '.awesome-nav-content' );
+			const content = pillOf( ref )?.querySelector(
+				'.awesome-nav-content'
+			);
 			if ( content ) {
 				const scroller = content.firstElementChild || content;
 				// tabindex="-1" allows programmatic focus without adding to tab order.
@@ -50,100 +138,49 @@ const { state, actions } = store( 'awesome-navigation', {
 			}
 		},
 
-		close: () => {
-			// FIX #4 (a11y): Close submenus first on Escape, then close pill.
-			if ( state.submenuStack.length > 0 ) {
-				actions.closeAllSubmenus();
-			}
-			state.isOpen = false;
-		},
+		close: () => closePill( pillContext(), pillOf( getElement().ref ) ),
 
 		handleKeydown: ( event ) => {
 			if ( event.key !== 'Escape' ) {
 				return;
 			}
 
+			const ctx = pillContext();
+			const pill = pillOf( getElement().ref );
+
 			// Close search first if open.
-			if ( state.isSearchOpen ) {
-				actions.closeSearch();
+			if ( ctx.isSearchOpen ) {
+				closeSearchPanel( ctx, pill );
 				return;
 			}
 
-			if ( ! state.isOpen ) {
+			if ( ! ctx.isOpen ) {
 				return;
 			}
 
 			// If submenus are open, close the topmost one first.
-			if ( state.submenuStack.length > 0 ) {
+			if ( openPanels( pill ).length > 0 ) {
 				event.stopPropagation();
-				actions.closeSubmenu();
+				closeTopSubmenu( pill );
 				return;
 			}
 
 			// Otherwise close the whole pill and return focus to toggle.
-			actions.close();
-			const { ref } = getElement();
-			const toggle = ref.querySelector(
+			closePill( ctx, pill );
+			pill?.querySelector(
 				'.wp-block-awesome-navigation-menu-toggle'
-			);
-			if ( toggle ) {
-				toggle.focus();
-			}
+			)?.focus();
 		},
 
-		closeSubmenu: () => {
-			if ( state.submenuStack.length === 0 ) {
-				return;
-			}
+		closeSubmenu: () => closeTopSubmenu( pillOf( getElement().ref ) ),
 
-			const current =
-				state.submenuStack[ state.submenuStack.length - 1 ];
-			current.classList.remove( 'is-submenu-open' );
-
-			// Same contract as the observer above — `open-on-click`, so
-			// core/page-list toggles close correctly too.
-			const parentSubmenu = current.closest( '.open-on-click' );
-			if ( parentSubmenu ) {
-				const toggle = parentSubmenu.querySelector(
-					':scope > [aria-expanded="true"]'
-				);
-				if ( toggle ) {
-					toggle.click();
-					toggle.focus();
-				}
-			}
-
-			state.submenuStack = state.submenuStack.slice( 0, -1 );
-		},
-
-		closeAllSubmenus: () => {
-			// Deepest-first: clearing only the plugin's class left core's
-			// toggle still reporting aria-expanded="true", so on reopen the
-			// submenu was hidden while its toggle announced "expanded" and
-			// the next activation appeared to do nothing.
-			state.submenuStack
-				.slice()
-				.reverse()
-				.forEach( ( el ) => {
-					el.classList.remove( 'is-submenu-open' );
-					el.scrollTop = 0;
-
-					const item = el.closest( '.open-on-click' );
-					const toggle = item?.querySelector(
-						':scope > [aria-expanded="true"]'
-					);
-					if ( toggle ) {
-						toggle.click();
-					}
-				} );
-			state.submenuStack = [];
-		},
+		closeAllSubmenus: () => closeAllSubmenus( pillOf( getElement().ref ) ),
 
 		/**
 		 * Toggle the inline search.
 		 */
 		toggleSearch: () => {
-			if ( state.isSearchOpen ) {
+			if ( pillContext().isSearchOpen ) {
 				actions.closeSearch();
 			} else {
 				actions.openSearch();
@@ -151,33 +188,25 @@ const { state, actions } = store( 'awesome-navigation', {
 		},
 
 		openSearch: () => {
-			if ( state.isOpen ) {
+			const ctx = pillContext();
+			if ( ctx.isOpen ) {
 				actions.close();
 			}
-			state.isSearchOpen = true;
+			ctx.isSearchOpen = true;
 
 			const { ref } = getElement();
 			requestAnimationFrame( () => {
-				const input = ref
-					.closest( '.awesome-nav-pill' )
-					?.querySelector( '.awesome-nav-search-input' );
+				const input = pillOf( ref )?.querySelector(
+					'.awesome-nav-search-input'
+				);
 				if ( input ) {
 					input.focus();
 				}
 			} );
 		},
 
-		closeSearch: () => {
-			state.isSearchOpen = false;
-
-			const { ref } = getElement();
-			const btn = ref
-				.closest( '.awesome-nav-pill' )
-				?.querySelector( '.awesome-nav-search-btn' );
-			if ( btn ) {
-				btn.focus();
-			}
-		},
+		closeSearch: () =>
+			closeSearchPanel( pillContext(), pillOf( getElement().ref ) ),
 
 		handleSearchKeydown: ( event ) => {
 			if ( event.key === 'Escape' ) {
@@ -189,35 +218,25 @@ const { state, actions } = store( 'awesome-navigation', {
 	callbacks: {
 		init: () => {
 			const { ref } = getElement();
-
-			// --- Scroll tracking (FIX #12: guard to avoid needless reactive updates) ---
-			const checkScroll = () => {
-				const scrolled = window.scrollY > SCROLL_THRESHOLD;
-				if ( scrolled !== state.isScrolled ) {
-					state.isScrolled = scrolled;
-				}
-			};
-			checkScroll();
-			window.addEventListener( 'scroll', checkScroll, {
-				passive: true,
-			} );
+			// getContext() throws once the synchronous directive scope is
+			// popped, and everything below runs after that — from a listener
+			// or an observer callback. Capture the proxy here and close over
+			// it; its identity is stable for the element's lifetime.
+			const ctx = getContext();
 
 			// --- Click outside (FIX #8: named handler for proper cleanup) ---
 			const handleClickOutside = ( event ) => {
 				if ( ! ref || ref.contains( event.target ) ) {
 					return;
 				}
-				if ( state.isSearchOpen ) {
-					actions.closeSearch();
+				if ( ctx.isSearchOpen ) {
+					closeSearchPanel( ctx, ref );
 				}
-				if ( state.isOpen ) {
-					actions.close();
-					const toggle = ref.querySelector(
+				if ( ctx.isOpen ) {
+					closePill( ctx, ref );
+					ref.querySelector(
 						'.wp-block-awesome-navigation-menu-toggle'
-					);
-					if ( toggle ) {
-						toggle.focus();
-					}
+					)?.focus();
 				}
 			};
 			document.addEventListener( 'click', handleClickOutside );
@@ -277,8 +296,7 @@ const { state, actions } = store( 'awesome-navigation', {
 								? `Back to ${ parentName }`
 								: 'Back';
 
-							const backBtn =
-								document.createElement( 'button' );
+							const backBtn = document.createElement( 'button' );
 							backBtn.className = 'awesome-nav-back';
 							backBtn.setAttribute( 'type', 'button' );
 							backBtn.setAttribute( 'aria-label', backLabel );
@@ -288,10 +306,6 @@ const { state, actions } = store( 'awesome-navigation', {
 								submenuContainer.classList.remove(
 									'is-submenu-open'
 								);
-								state.submenuStack =
-									state.submenuStack.filter(
-										( el ) => el !== submenuContainer
-									);
 								if (
 									target.getAttribute( 'aria-expanded' ) ===
 									'true'
@@ -306,14 +320,6 @@ const { state, actions } = store( 'awesome-navigation', {
 							);
 						}
 
-						if (
-							! state.submenuStack.includes( submenuContainer )
-						) {
-							state.submenuStack = [
-								...state.submenuStack,
-								submenuContainer,
-							];
-						}
 						// A takeover is absolutely positioned against its
 						// nearest positioned ancestor. For a nested panel
 						// that ancestor is the PARENT panel, which is itself
@@ -347,9 +353,6 @@ const { state, actions } = store( 'awesome-navigation', {
 						} );
 					} else {
 						submenuContainer.classList.remove( 'is-submenu-open' );
-						state.submenuStack = state.submenuStack.filter(
-							( el ) => el !== submenuContainer
-						);
 					}
 				}
 			} );
@@ -362,7 +365,6 @@ const { state, actions } = store( 'awesome-navigation', {
 
 			// FIX #8: Include click listener in cleanup.
 			return () => {
-				window.removeEventListener( 'scroll', checkScroll );
 				document.removeEventListener( 'click', handleClickOutside );
 				observer.disconnect();
 			};

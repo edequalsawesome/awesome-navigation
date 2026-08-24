@@ -31,9 +31,13 @@ $wrapper_attributes = get_block_wrapper_attributes( array(
 	'type'                        => 'button',
 	'aria-label'                  => $label,
 	'aria-expanded'               => 'false',
-	'aria-controls'               => 'awesome-nav-search-panel',
+	// No aria-controls here. The pill owns the panel — it injects exactly one
+	// per pill and stamps the matching id on every search button inside itself.
+	// Minting an id per TOGGLE looked right but breaks as soon as a pill holds
+	// two of them: only the last one's panel is injected, and the earlier
+	// buttons point at an id no element carries.
 	'data-wp-on--click'           => 'actions.toggleSearch',
-	'data-wp-bind--aria-expanded' => 'state.isSearchOpen',
+	'data-wp-bind--aria-expanded' => 'context.isSearchOpen',
 ) );
 
 // Search icon (magnifying glass).
@@ -49,6 +53,14 @@ $close_svg = sprintf(
 );
 
 // Store attributes for the main plugin's render_block filter to pick up.
+//
+// A single scalar global, so it only survives one toggle-then-pill handoff at a
+// time. That is fine for any number of SIBLING pills — each toggle renders
+// immediately before its own pill's render_block fires — but a pill nested
+// inside another pill would overwrite and consume the outer pill's attributes
+// before the outer render runs, leaving it a Search button with no panel.
+// Nesting pills is documented as unsupported (see readme.txt) rather than
+// solved with a render stack, because there is no reason to do it.
 global $awesome_nav_search_attrs;
 $awesome_nav_search_attrs = array(
 	'placeholder'  => $placeholder,
