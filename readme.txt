@@ -4,7 +4,7 @@ Tags: navigation, menu, header, overlay, blocks
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 2026.08.003
+Stable tag: 2026.08.004
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,6 +30,10 @@ and one Escape press dismisses both pills rather than just the inner one. There
 is no reason to nest pills, so this is documented rather than fixed.
 
 == Changelog ==
+
+= 2026.08.004 =
+* Fix: submenus no longer appear to hang before opening. The panel stayed hidden for the whole 0.4s slide, so the animation played invisibly and the submenu seemed to pop into place at the end.
+* Change: a submenu item now shows its label and its chevron inside a single field, split by a divider, instead of leaving the chevron outside the item's outline.
 
 = 2026.08.003 =
 * Fix: while a submenu is open over the menu, the menu behind it is no longer reachable by keyboard or screen reader. Previously you could tab onto links you could not see, including those in a second column.
