@@ -4,7 +4,7 @@ Tags: navigation, menu, header, overlay, blocks
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 2026.09.001
+Stable tag: 2026.09.002
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,6 +30,10 @@ and one Escape press dismisses both pills rather than just the inner one. There
 is no reason to nest pills, so this is documented rather than fixed.
 
 == Changelog ==
+
+= 2026.09.002 =
+* Fix: submenus no longer appear to hang before opening. The panel stayed hidden for the whole 0.4s slide, so the animation played invisibly and the submenu seemed to pop into place at the end.
+* Change: a submenu item now shows its label and its chevron inside a single field, split by a divider, instead of leaving the chevron outside the item's outline.
 
 = 2026.09.001 =
 * Fix: the pill's menu template part could lose its Navigation Overlay area, which hid it from the Menu Content picker and from the Site Editor's Navigation Overlay list. The plugin now re-tags it on the next admin page load.

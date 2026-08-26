@@ -227,6 +227,21 @@
    takeover would size to the full scroll height and scroll with the list.
    The pill already animates open via grid-template-rows, so the 8px slide
    this used to add was a flourish on top of an existing reveal. */
+/*
+ * The pill focuses this scroller when it opens, so a keyboard user's next Tab
+ * starts inside the menu rather than back at the top of the page. It carries
+ * tabindex="-1" and is therefore never reachable by tabbing — the only focus it
+ * ever receives is that programmatic one, and Chrome still matches
+ * :focus-visible for it, painting a 2px ring around the entire menu the moment
+ * it opens. The ring communicates nothing (nobody navigated to this box) and
+ * reads as a stray border around the whole panel, so drop it. The focus MOVE,
+ * which is the part doing the accessibility work, is untouched.
+ */
+.awesome-nav-content-inner:focus,
+.awesome-nav-content:focus {
+	outline: none;
+}
+
 .awesome-nav-content-inner {
 	opacity: 0;
 	/* Closing: no delay, and quicker than the box, so the contents are gone
@@ -382,6 +397,153 @@
 	transform: translateY(0);
 }
 
+/*
+ * Submenu items: one field holding `label | chevron`.
+ *
+ * Core renders the chevron as a SIBLING of the label, not inside it:
+ *
+ *   <li class="has-child">
+ *     <button class="wp-block-navigation-item__content">Projects</button>
+ *     <span class="wp-block-navigation__submenu-icon">
+ *     <ul class="wp-block-navigation__submenu-container">
+ *
+ * The outlined style paints its card on that button, so the chevron sat
+ * outside the surface it belongs to — and picked up the pill's own opaque
+ * background from the inherit chain above, painting a light blob across the
+ * card's border. Moving the card onto the <li> puts both children inside it.
+ *
+ * Scoped to .has-child so plain items keep painting the card on the button;
+ * they have no second child and nothing to divide. Gated on core's click mode
+ * for the same reason the takeover is: `display: flex` here would make the
+ * submenu <ul> a flex item beside the label in `always` mode, where core
+ * renders that tree in flow. Hover and always keep the button-card styling,
+ * which is what they had before.
+ */
+.wp-block-navigation.is-style-outlined .wp-block-navigation-item.has-child.open-on-click {
+	--awesome-nav-chevron-width: 2.75rem;
+
+	display: flex;
+	align-items: stretch;
+	width: 95%;
+
+	/* The button this card moved off of was border-box, the <li> is not — without
+	   this the submenu rows sit 4px (the two borders) wider than their siblings. */
+	box-sizing: border-box;
+	border: 2px solid var(--awesome-nav-item-color);
+	border-radius: 0.5rem;
+
+	/*
+	 * The card's fill is an INSET SHADOW, not a background, and that is
+	 * deliberate on three counts:
+	 *
+	 * 1. This <li> is the takeover panel's parent, and the panel paints
+	 *    `background: inherit` — it copies its parent's computed value. A
+	 *    translucent background here would make the panel translucent too, and
+	 *    the open item's own toggle is deliberately left visible underneath it
+	 *    (see the cover rules below), so its label would ghost through. Nesting
+	 *    compounds it: ~15% at level one, ~28% at level two.
+	 * 2. render.php writes `background: transparent !important` inline on this
+	 *    same <li> whenever an author picks an item colour. Inline !important
+	 *    beats a stylesheet !important, so a background here silently vanishes
+	 *    for exactly the users who customised their menu.
+	 * 3. It needs no !important of its own.
+	 *
+	 * The background is left to the pill's inherit chain, which keeps it opaque.
+	 */
+	box-shadow: inset 0 0 0 100vmax
+		color-mix( in srgb, var( --awesome-nav-item-color ) 15%, transparent );
+	transition:
+		box-shadow 0.2s ease,
+		border-color 0.2s ease;
+}
+
+/* The label is now just the label — the <li> holds the card. */
+.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click
+	> .wp-block-navigation-item__content {
+	flex: 1 1 auto;
+	width: auto;
+	border: none;
+	border-radius: 0;
+	background: transparent !important;
+	box-shadow: none;
+
+	/*
+	 * The button reaches UNDER the chevron so the whole card is clickable.
+	 *
+	 * Core ships the chevron as a non-interactive <span> SIBLING of the button
+	 * and overlaps it onto the button with a negative margin, so its
+	 * `pointer-events: none` drops clicks through to the button beneath. Giving
+	 * the chevron its own padded slice broke that: hit-testing landed on the
+	 * <li>, which has no handler, and clicking the chevron did nothing at all
+	 * while the card still lit up on hover. Reproduced from a user recording.
+	 *
+	 * Negative margin restores the overlap; the matching padding keeps the
+	 * label from running under the glyph, so it still stops at the divider.
+	 */
+	margin-inline-end: calc( -1 * var( --awesome-nav-chevron-width ) );
+	padding-inline-end: var( --awesome-nav-chevron-width );
+
+	/* Flex items floor at min-content, so a long unbroken label would push the
+	   divider and chevron out past the card instead of shrinking. */
+	min-width: 0;
+}
+
+/* Hover/active move to the card's new owner so the whole field responds. */
+/*
+ * NO `transform` here, however tempting the 1px lift is.
+ *
+ * A transform of anything but `none` makes an element a containing block for
+ * its absolutely-positioned descendants — and the takeover panel is a
+ * DESCENDANT of this <li>, where it was only a SIBLING of the button this card
+ * moved off of. A hover lift therefore hands the containing block back to a
+ * ~49px-tall <li>, and the panel's `inset: 0` resolves against that instead of
+ * the content area: the exact sliver the position:static chain above exists to
+ * prevent. It reproduces on the first mouse-driven open, because the pointer is
+ * already resting on the row when the click lands.
+ *
+ * `translate: 0 -1px` is not an escape — the individual transform properties
+ * establish a containing block by the same rule.
+ */
+.wp-block-navigation.is-style-outlined .wp-block-navigation-item.has-child.open-on-click:hover {
+	box-shadow:
+		inset 0 0 0 100vmax
+			color-mix( in srgb, var( --awesome-nav-item-color ) 25%, transparent ),
+		0 4px 12px rgba( 0, 0, 0, 0.15 );
+}
+
+.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click:hover
+	> .wp-block-navigation-item__content {
+	background: transparent !important;
+	transform: none;
+	box-shadow: none;
+}
+
+/* The divider that makes it read as `label | chevron`. */
+.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click
+	> .wp-block-navigation__submenu-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	/* Fixed width, because the button above overlaps it by exactly this much.
+	   2.75rem also keeps the glyph on a 44px touch target. */
+	flex: 0 0 var( --awesome-nav-chevron-width );
+	width: var( --awesome-nav-chevron-width );
+	height: auto;
+
+	/* Core sets align-self:center on the icon, which collapses it to the glyph
+	   and leaves the divider a stub floating in the middle of the field. */
+	align-self: stretch;
+	margin: 0;
+	padding: 0;
+	background: transparent !important;
+	border-inline-start: 2px solid
+		color-mix(in srgb, var(--awesome-nav-item-color) 30%, transparent);
+	pointer-events: none;
+}
+
 /* ==========================================================================
    Submenu Canvas Takeover
    ========================================================================== */
@@ -461,10 +623,14 @@
 	visibility: hidden;
 	opacity: 0;
 	transform: translateX(100%);
+
+	/* This list governs the way OUT (transitions start from the after-change
+	   style, which when closing is this rule). The visibility delay must stay
+	   in step with the transform duration or the panel blanks mid-slide. */
 	transition:
-		transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
-		opacity 0.3s ease,
-		visibility 0s linear 0.4s;
+		transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+		opacity 0.25s ease,
+		visibility 0s linear 0.3s;
 
 	display: flex !important;
 	flex-direction: column;
@@ -543,10 +709,22 @@
 	visibility: visible;
 	opacity: 1;
 	transform: translateX(0);
+
+	/*
+	 * visibility is deliberately ABSENT from this list, and that omission is
+	 * the whole fix. Transitions start from the after-change style, so opening
+	 * is governed here — and naming visibility at all, even at `0s`, starts a
+	 * transition that then picks up the closed state's delay. Measured: the
+	 * panel stayed hidden for the entire 389ms slide, so the animation played
+	 * invisibly and the panel appeared to pop into place at the end. That is
+	 * the "long delay before the submenu shows up", and it was never a slow
+	 * animation. Omitting the property makes the change instant (6ms).
+	 * Closing still hides late, because the closed rule is the after-change
+	 * style in that direction and it keeps its delay.
+	 */
 	transition:
-		transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
-		opacity 0.3s ease,
-		visibility 0s;
+		transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
+		opacity 0.25s ease;
 }
 
 /*
@@ -564,6 +742,69 @@
 	visibility: visible;
 	opacity: 1;
 	overflow-y: visible !important;
+}
+
+/*
+ * Same reason, for the `label | chevron` card: the rule above puts the submenu
+ * back in flow here, and the card makes its <li> a flex container — so in the
+ * canvas the open submenu would line up as a third column beside the label and
+ * the chevron. Hand authoring back to core's own layout; the card is a
+ * front-end presentation choice, not something the author edits.
+ */
+.editor-styles-wrapper
+	.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click,
+.editor-styles-wrapper
+	.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click:hover {
+	display: block;
+	width: 100%;
+	border: none;
+	border-radius: 0;
+
+	/* Every state in one rule. Reverting only the resting state left the hover
+	   shadow painting on an <li> that has no visible edge in the canvas, while
+	   the visible card inside it lost its own hover feedback. */
+	box-shadow: none;
+	transform: none;
+	transition: none;
+}
+
+.editor-styles-wrapper
+	.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click
+	> .wp-block-navigation-item__content,
+.editor-styles-wrapper
+	.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click:hover
+	> .wp-block-navigation-item__content {
+	width: 95%;
+	border: 2px solid var(--awesome-nav-item-color);
+	border-radius: 0.5rem;
+	background: color-mix(
+		in srgb,
+		var(--awesome-nav-item-color) 15%,
+		transparent
+	) !important;
+
+	/* Undo the front-end overlap — there is no chevron to reach under here. */
+	margin-inline-end: 0;
+	padding-inline-end: 1rem;
+}
+
+.editor-styles-wrapper
+	.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click
+	> .wp-block-navigation__submenu-icon {
+	align-self: center;
+	border-inline-start: none;
+	padding: 0;
+
+	/* display:flex inside a display:block <li> becomes a block-level box, which
+	   drops the chevron onto its own full-width line beneath the card. */
+	display: inline-flex;
+	flex: 0 0 auto;
+	width: auto;
 }
 
 .awesome-nav-pill .wp-block-navigation__submenu-icon {
@@ -659,7 +900,9 @@
 	.awesome-nav-back,
 	.awesome-nav-pill .wp-block-navigation__submenu-icon,
 	.awesome-nav-pill .wp-block-navigation-item__content,
-	.wp-block-navigation.is-style-outlined .wp-block-navigation-item__content {
+	.wp-block-navigation.is-style-outlined .wp-block-navigation-item__content,
+	.wp-block-navigation.is-style-outlined
+		.wp-block-navigation-item.has-child.open-on-click {
 		transition: none !important;
 	}
 
