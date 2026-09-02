@@ -119,12 +119,13 @@ function awesome_nav_heal_overlay_area() {
 		return;
 	}
 
-	// 'any' silently excludes trash; name it so an untrashed part comes back healed.
+	// 'any' silently excludes trash and auto-draft. Core lists auto-drafts, so
+	// they need the right area too; trash so an untrashed part comes back healed.
 	// No name filter: the picker's "Create New" mints awesome-nav-menu-2, -3, ...
 	// and those need the same guard. Template parts are few, so filter in PHP.
 	$parts = get_posts( array(
 		'post_type'   => 'wp_template_part',
-		'post_status' => array( 'any', 'trash' ),
+		'post_status' => array( 'any', 'trash', 'auto-draft' ),
 		'numberposts' => -1,
 	) );
 
