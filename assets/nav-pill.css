@@ -520,6 +520,33 @@
 	box-shadow: none;
 }
 
+/*
+ * Focus ring moves with the card. The button still takes focus (core's
+ * keyboard handling lives on it), but it is now a square, inset slice of a
+ * rounded card, so its own ring drew a box across the border. Paint the
+ * browser's native ring on the <li> instead: `outline: auto` follows the
+ * radius and matches what plain items get, and the offset mirrors the theme
+ * convention on the button (Twenty Twenty-Five sets 4px there).
+ */
+.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click
+	> .wp-block-navigation-item__content:focus-visible {
+	outline: none;
+}
+
+.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click:has(
+		> .wp-block-navigation-item__content:focus-visible
+	) {
+	outline: auto;
+	outline-offset: 4px;
+
+	/* `auto` on an author rule paints in currentColor, not the UA focus colour
+	   the plain items get. Name it; the system colour is the Firefox fallback. */
+	outline-color: Highlight;
+	outline-color: -webkit-focus-ring-color;
+}
+
 /* The divider that makes it read as `label | chevron`. */
 .wp-block-navigation.is-style-outlined
 	.wp-block-navigation-item.has-child.open-on-click
@@ -591,6 +618,17 @@
 	position: static;
 }
 
+/*
+ * Same for any Group an author wraps the navigation in. Core gives a
+ * constrained Group `position: relative` (at :where() specificity), and the
+ * Site Editor's default Group is constrained, so the panel anchored to the
+ * wrapper and sat inset by its padding instead of covering the content area.
+ * Scoped to groups that actually hold a click-mode nav.
+ */
+.awesome-nav-pill .awesome-nav-content-inner .wp-block-group:has(.open-on-click) {
+	position: static;
+}
+
 .awesome-nav-pill .open-on-click > .wp-block-navigation__submenu-container {
 	position: absolute !important;
 	top: 0 !important;
@@ -628,9 +666,9 @@
 	   style, which when closing is this rule). The visibility delay must stay
 	   in step with the transform duration or the panel blanks mid-slide. */
 	transition:
-		transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-		opacity 0.25s ease,
-		visibility 0s linear 0.3s;
+		transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+		opacity 0.3s ease,
+		visibility 0s linear 0.4s;
 
 	display: flex !important;
 	flex-direction: column;
@@ -681,12 +719,6 @@
    it explicitly from inside the covered subtree. */
 .awesome-nav-content:has( .is-submenu-open ) .awesome-nav-content-inner .is-submenu-open {
 	visibility: visible;
-
-	/* Drop visibility from the transition here. The closed state delays it by
-	   0.4s so the slide-out finishes before the panel is hidden, and that delay
-	   was still governing on the way IN: measured, the panel stayed hidden for
-	   408ms after opening. Nothing needs the delay when opening. */
-	transition-property: transform, opacity;
 }
 
 /* The open item's own toggle is the exception, and it has to be: it still holds
@@ -715,7 +747,7 @@
 	 * the whole fix. Transitions start from the after-change style, so opening
 	 * is governed here — and naming visibility at all, even at `0s`, starts a
 	 * transition that then picks up the closed state's delay. Measured: the
-	 * panel stayed hidden for the entire 389ms slide, so the animation played
+	 * panel stayed hidden for the entire ~400ms slide, so the animation played
 	 * invisibly and the panel appeared to pop into place at the end. That is
 	 * the "long delay before the submenu shows up", and it was never a slow
 	 * animation. Omitting the property makes the change instant (6ms).
@@ -723,8 +755,8 @@
 	 * style in that direction and it keeps its delay.
 	 */
 	transition:
-		transform 0.3s cubic-bezier(0.32, 0.72, 0, 1),
-		opacity 0.25s ease;
+		transform 0.4s cubic-bezier(0.32, 0.72, 0, 1),
+		opacity 0.3s ease;
 }
 
 /*

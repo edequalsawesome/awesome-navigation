@@ -29,6 +29,13 @@ and consumes the outer pill's, leaving the outer Search button with no panel;
 and one Escape press dismisses both pills rather than just the inner one. There
 is no reason to nest pills, so this is documented rather than fixed.
 
+The Navigation block inside the pill's menu content should keep its overlay
+menu set to *Off* (the pattern ships it that way). The pill is already the
+overlay; core's own mobile overlay opens inside the pill's clipped content area
+and collides with the submenu takeover. Submenus should use *Open on click* to
+get the takeover panel — *Always open* and *Show on hover* render core's
+default layout instead.
+
 == Changelog ==
 
 = 2026.09.002 =
