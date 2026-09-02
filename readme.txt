@@ -41,7 +41,7 @@ render WordPress's default submenu layout instead.
 
 = 2026.09.002 =
 * Fix: submenus no longer appear to hang before opening. The panel stayed hidden for the whole 0.4s slide, so the animation played invisibly and the submenu seemed to pop into place at the end.
-* Change: a submenu item now shows its label and its chevron inside a single field, split by a divider, instead of leaving the chevron outside the item's outline. Keyboard focus outlines the whole field, and a long unbroken label wraps instead of running under the divider.
+* Change: a submenu item now shows its label and a small "›" chevron inside a single field, split by a divider, instead of leaving an oversized chevron outside the item's outline. The chevron points the way the submenu panel slides in. Keyboard focus outlines the whole field, and a long unbroken label wraps instead of running under the divider.
 * Fix: the submenu panel covers the whole menu area again when the Navigation block sits inside a Group. It was anchoring to the Group and sitting inset by its padding.
 * Fix: the menu-part repair added in 2026.09.001 now also covers parts the Site Editor is still holding as auto-drafts, since those show up in its lists too.
 

@@ -583,6 +583,36 @@
 	pointer-events: none;
 }
 
+/*
+ * The glyph itself. Core's svg is `width: inherit`, so the 2.75rem cell
+ * above made it 44px tall. Size it to the text and point it
+ * the way the panel travels: it slides in from the end edge, so `>`.
+ * RTL flips the slide, so the glyph flips with it.
+ */
+.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click
+	> .wp-block-navigation__submenu-icon svg {
+	width: 1em;
+	height: 1em;
+	margin: 0;
+	transform: rotate( -90deg );
+}
+
+[dir="rtl"]
+	.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click
+	> .wp-block-navigation__submenu-icon svg {
+	transform: rotate( 90deg );
+}
+
+/* Inside a takeover panel the plain items run the full width, so the card
+   does too; 95% is the top-level width, where the pill's edge needs air. */
+.wp-block-navigation.is-style-outlined
+	.wp-block-navigation__submenu-container
+	> .wp-block-navigation-item.has-child.open-on-click {
+	width: 100%;
+}
+
 /* ==========================================================================
    Submenu Canvas Takeover
    ========================================================================== */
@@ -860,6 +890,14 @@
 	display: inline-flex;
 	flex: 0 0 auto;
 	width: auto;
+}
+
+/* The submenu opens beneath the row in the canvas, so the glyph points down. */
+.editor-styles-wrapper
+	.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click
+	> .wp-block-navigation__submenu-icon svg {
+	transform: none;
 }
 
 /* The card is back on the button here, so the ring goes back with it. */
