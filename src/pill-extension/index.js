@@ -202,7 +202,10 @@ function TemplatePartSelector( { value, onChange } ) {
 				'wp_template_part',
 				{
 					slug,
-					theme: currentTheme || 'theme',
+					// Omit theme until the resolver settles: the REST controller
+					// stores whatever it's given as the wp_theme term, and a
+					// literal placeholder makes the part unlistable forever.
+					...( currentTheme ? { theme: currentTheme } : {} ),
 					type: 'wp_template_part',
 					area: 'navigation-overlay',
 					title: { raw: title, rendered: title },
@@ -216,7 +219,7 @@ function TemplatePartSelector( { value, onChange } ) {
 
 				setTimeout( () => {
 					const editUrl = `${ adminUrl }site-editor.php?p=%2Fwp_template_part%2F${ encodeURIComponent(
-						currentTheme || 'theme'
+						newTemplate.theme || currentTheme
 					) }%2F%2F${ encodeURIComponent(
 						slug
 					) }&canvas=edit`;

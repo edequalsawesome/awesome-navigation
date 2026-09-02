@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Awesome Navigation
  * Description: A floating navigation pill that expands to reveal your menu. Pushes content down at the top, floats over when scrolled. On WP 7.0+ includes frosted glass overlay patterns for Navigation Overlays.
- * Version: 2026.08.003
+ * Version: 2026.09.001
  * Requires at least: 6.5
  * Requires PHP: 8.0
  * Author: eD! Thomas
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'AWESOME_NAV_VERSION', '2026.08.003' );
+define( 'AWESOME_NAV_VERSION', '2026.09.001' );
 define( 'AWESOME_NAV_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AWESOME_NAV_URL', plugin_dir_url( __FILE__ ) );
 
@@ -99,6 +99,57 @@ function awesome_nav_activate() {
 	wp_set_object_terms( $post_id, get_stylesheet(), 'wp_theme' );
 }
 register_activation_hook( __FILE__, 'awesome_nav_activate' );
+
+/**
+ * Self-heal the default overlay part's area.
+ *
+ * The awesome-nav-menu part can end up tagged "uncategorized" instead of
+ * "navigation-overlay" (seen on a site where it was created 2026-07-14).
+ * The front end doesn't care — core/template-part resolves by slug — but the
+ * Menu Content picker and the Site Editor's Navigation Overlay view both
+ * filter on the area term, so the part becomes impossible to find or edit.
+ * Runs once per plugin version so a bump re-checks; the version stamp is
+ * only written when every part came out right, so a failed write retries
+ * on the next admin load instead of hiding until the next release.
+ */
+function awesome_nav_heal_overlay_area() {
+	// admin_init also fires for anonymous admin-ajax.php hits — keep the
+	// DB work on real admin page loads.
+	if ( wp_doing_ajax() || ! defined( 'WP_TEMPLATE_PART_AREA_NAVIGATION_OVERLAY' ) || AWESOME_NAV_VERSION === get_option( 'awesome_nav_area_healed' ) ) {
+		return;
+	}
+
+	// 'any' silently excludes trash; name it so an untrashed part comes back healed.
+	// No name filter: the picker's "Create New" mints awesome-nav-menu-2, -3, ...
+	// and those need the same guard. Template parts are few, so filter in PHP.
+	$parts = get_posts( array(
+		'post_type'   => 'wp_template_part',
+		'post_status' => array( 'any', 'trash' ),
+		'numberposts' => -1,
+	) );
+
+	$healed = true;
+	foreach ( $parts as $part ) {
+		if ( ! str_starts_with( $part->post_name, 'awesome-nav-menu' ) ) {
+			continue;
+		}
+		// Core reads only the first area term, so "has the term" isn't enough —
+		// the set has to be exactly the overlay area.
+		$areas = wp_get_object_terms( $part->ID, 'wp_template_part_area', array( 'fields' => 'slugs' ) );
+		if ( array( WP_TEMPLATE_PART_AREA_NAVIGATION_OVERLAY ) === $areas ) {
+			continue;
+		}
+		$result = wp_set_object_terms( $part->ID, WP_TEMPLATE_PART_AREA_NAVIGATION_OVERLAY, 'wp_template_part_area' );
+		if ( is_wp_error( $result ) ) {
+			$healed = false;
+		}
+	}
+
+	if ( $healed ) {
+		update_option( 'awesome_nav_area_healed', AWESOME_NAV_VERSION );
+	}
+}
+add_action( 'admin_init', 'awesome_nav_heal_overlay_area' );
 
 /**
  * Register the Menu Toggle block and block styles.
