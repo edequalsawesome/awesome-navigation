@@ -4,7 +4,7 @@ Tags: navigation, menu, header, overlay, blocks
 Requires at least: 6.5
 Tested up to: 7.0
 Requires PHP: 8.0
-Stable tag: 2026.08.003
+Stable tag: 2026.09.001
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,6 +30,10 @@ and one Escape press dismisses both pills rather than just the inner one. There
 is no reason to nest pills, so this is documented rather than fixed.
 
 == Changelog ==
+
+= 2026.09.001 =
+* Fix: the pill's menu template part could lose its Navigation Overlay area, which hid it from the Menu Content picker and from the Site Editor's Navigation Overlay list. The plugin now re-tags it on the next admin page load.
+* Fix: Create New in the Menu Content picker no longer saves a part under a placeholder theme name if the editor has not finished loading the active theme.
 
 = 2026.08.003 =
 * Fix: while a submenu is open over the menu, the menu behind it is no longer reachable by keyboard or screen reader. Previously you could tab onto links you could not see, including those in a second column.
