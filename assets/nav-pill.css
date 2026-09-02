@@ -485,8 +485,11 @@
 	padding-inline-end: var( --awesome-nav-chevron-width );
 
 	/* Flex items floor at min-content, so a long unbroken label would push the
-	   divider and chevron out past the card instead of shrinking. */
+	   divider and chevron out past the card instead of shrinking. min-width
+	   lets the box shrink; overflow-wrap makes the text follow it instead of
+	   running under the divider. */
 	min-width: 0;
+	overflow-wrap: anywhere;
 }
 
 /* Hover/active move to the card's new owner so the whole field responds. */
@@ -527,24 +530,33 @@
  * browser's native ring on the <li> instead: `outline: auto` follows the
  * radius and matches what plain items get, and the offset mirrors the theme
  * convention on the button (Twenty Twenty-Five sets 4px there).
+ *
+ * Both halves sit under one @supports: the suppression must never apply
+ * where the replacement cannot, or a browser without :has() gets no ring
+ * at all. The editor canvas undoes this further down, where the card goes
+ * back onto the button and the <li> is a full-width block the ring would
+ * overshoot.
  */
-.wp-block-navigation.is-style-outlined
-	.wp-block-navigation-item.has-child.open-on-click
-	> .wp-block-navigation-item__content:focus-visible {
-	outline: none;
-}
+@supports selector( :has( a ) ) {
+	.wp-block-navigation.is-style-outlined
+		.wp-block-navigation-item.has-child.open-on-click
+		> .wp-block-navigation-item__content:focus-visible {
+		outline: none;
+	}
 
-.wp-block-navigation.is-style-outlined
-	.wp-block-navigation-item.has-child.open-on-click:has(
-		> .wp-block-navigation-item__content:focus-visible
-	) {
-	outline: auto;
-	outline-offset: 4px;
+	.wp-block-navigation.is-style-outlined
+		.wp-block-navigation-item.has-child.open-on-click:has(
+			> .wp-block-navigation-item__content:focus-visible
+		) {
+		outline: auto;
+		outline-offset: 4px;
 
-	/* `auto` on an author rule paints in currentColor, not the UA focus colour
-	   the plain items get. Name it; the system colour is the Firefox fallback. */
-	outline-color: Highlight;
-	outline-color: -webkit-focus-ring-color;
+		/* `auto` on an author rule paints in currentColor, not the UA focus
+		   colour the plain items get. Name it; the system colour is the
+		   Firefox fallback. */
+		outline-color: Highlight;
+		outline-color: -webkit-focus-ring-color;
+	}
 }
 
 /* The divider that makes it read as `label | chevron`. */
@@ -623,9 +635,12 @@
  * constrained Group `position: relative` (at :where() specificity), and the
  * Site Editor's default Group is constrained, so the panel anchored to the
  * wrapper and sat inset by its padding instead of covering the content area.
- * Scoped to groups that actually hold a click-mode nav.
+ * Scoped to groups that actually hold a click-mode nav, and a Group the
+ * author made sticky keeps its positioning — the panel anchors there instead.
  */
-.awesome-nav-pill .awesome-nav-content-inner .wp-block-group:has(.open-on-click) {
+.awesome-nav-pill
+	.awesome-nav-content-inner
+	.wp-block-group:has(.open-on-click):not(.is-position-sticky) {
 	position: static;
 }
 
@@ -774,6 +789,10 @@
 	visibility: visible;
 	opacity: 1;
 	overflow-y: visible !important;
+
+	/* In flow and inside a flex row (see below): take a whole line, so the
+	   open submenu sits under the label and chevron rather than beside them. */
+	flex: 0 0 100%;
 }
 
 /*
@@ -782,6 +801,10 @@
  * canvas the open submenu would line up as a third column beside the label and
  * the chevron. Hand authoring back to core's own layout; the card is a
  * front-end presentation choice, not something the author edits.
+ *
+ * Core's own <li> is a flex row, so keep it one: `display: block` put the
+ * chevron on its own line under the label. Wrapping lets the submenu <ul>
+ * above drop to a full-width line of its own.
  */
 .editor-styles-wrapper
 	.wp-block-navigation.is-style-outlined
@@ -789,7 +812,9 @@
 .editor-styles-wrapper
 	.wp-block-navigation.is-style-outlined
 	.wp-block-navigation-item.has-child.open-on-click:hover {
-	display: block;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
 	width: 100%;
 	border: none;
 	border-radius: 0;
@@ -832,11 +857,25 @@
 	border-inline-start: none;
 	padding: 0;
 
-	/* display:flex inside a display:block <li> becomes a block-level box, which
-	   drops the chevron onto its own full-width line beneath the card. */
 	display: inline-flex;
 	flex: 0 0 auto;
 	width: auto;
+}
+
+/* The card is back on the button here, so the ring goes back with it. */
+.editor-styles-wrapper
+	.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click
+	> .wp-block-navigation-item__content:focus-visible {
+	outline: revert;
+}
+
+.editor-styles-wrapper
+	.wp-block-navigation.is-style-outlined
+	.wp-block-navigation-item.has-child.open-on-click:has(
+		> .wp-block-navigation-item__content:focus-visible
+	) {
+	outline: none;
 }
 
 .awesome-nav-pill .wp-block-navigation__submenu-icon {

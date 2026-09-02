@@ -32,7 +32,7 @@ function awesome_nav_activate() {
 	// Check if the template part already exists.
 	$existing = get_posts( array(
 		'post_type'   => 'wp_template_part',
-		'post_status' => 'any',
+		'post_status' => array( 'any', 'trash', 'auto-draft' ),
 		'name'        => 'awesome-nav-menu',
 		'numberposts' => 1,
 	) );
@@ -610,7 +610,12 @@ function awesome_nav_convert_link_bg_to_variable( $block_content, $block ) {
 
 		// !important justified: overrides core's own inline background styles
 		// (third-party override — the exception to the no-!important rule).
-		$style = "--awesome-nav-item-color: {$color_value}; background: transparent !important; " . trim( $style );
+		// `inherit`, not `transparent`: the submenu takeover panel inside this
+		// <li> paints `background: inherit`, so a transparent item made the
+		// panel see-through. Inheriting gives the item the same surface every
+		// uncoloured item already gets from the pill's inherit chain; the card
+		// itself is painted by the stylesheet from --awesome-nav-item-color.
+		$style = "--awesome-nav-item-color: {$color_value}; background: inherit !important; " . trim( $style );
 
 		$processor->set_attribute( 'style', trim( $style ) );
 		$block_content = $processor->get_updated_html();
