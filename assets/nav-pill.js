@@ -135,10 +135,18 @@ const { actions } = store( 'awesome-navigation', {
 			);
 			if ( content ) {
 				const scroller = content.firstElementChild || content;
+				const active = content.ownerDocument.activeElement;
 				// tabindex="-1" allows programmatic focus without adding to tab order.
 				scroller.setAttribute( 'tabindex', '-1' );
-				requestAnimationFrame( () => {
-					scroller.focus( { preventScroll: true } );
+				window.requestAnimationFrame( () => {
+					if (
+						scroller.isConnected &&
+						ctx.isOpen &&
+						! ctx.isSearchOpen &&
+						content.ownerDocument.activeElement === active
+					) {
+						scroller.focus( { preventScroll: true } );
+					}
 				} );
 			}
 		},
@@ -200,11 +208,17 @@ const { actions } = store( 'awesome-navigation', {
 			ctx.isSearchOpen = true;
 
 			const { ref } = getElement();
-			requestAnimationFrame( () => {
+			const active = ref.ownerDocument.activeElement;
+			window.requestAnimationFrame( () => {
 				const input = pillOf( ref )?.querySelector(
 					'.awesome-nav-search-input'
 				);
-				if ( input ) {
+				if (
+					input?.isConnected &&
+					ctx.isSearchOpen &&
+					! ctx.isOpen &&
+					ref.ownerDocument.activeElement === active
+				) {
 					input.focus();
 				}
 			} );
@@ -228,6 +242,11 @@ const { actions } = store( 'awesome-navigation', {
 			// or an observer callback. Capture the proxy here and close over
 			// it; its identity is stable for the element's lifetime.
 			const ctx = getContext();
+			ref.querySelectorAll(
+				'.open-on-click > .wp-block-navigation__submenu-container'
+			).forEach( ( panel ) => {
+				panel.inert = ! expandedToggle( panel );
+			} );
 
 			// --- Click outside (FIX #8: named handler for proper cleanup) ---
 			const handleClickOutside = ( event ) => {
@@ -249,7 +268,7 @@ const { actions } = store( 'awesome-navigation', {
 			document.addEventListener( 'click', handleClickOutside );
 
 			// --- Submenu observation ---
-			const observer = new MutationObserver( ( mutations ) => {
+			const observer = new window.MutationObserver( ( mutations ) => {
 				for ( const mutation of mutations ) {
 					if (
 						mutation.type !== 'attributes' ||
@@ -287,9 +306,13 @@ const { actions } = store( 'awesome-navigation', {
 					}
 
 					if ( isExpanded ) {
+						submenuContainer.inert = false;
 						if (
-							! submenuContainer.querySelector(
-								'.awesome-nav-back'
+							! Array.from( submenuContainer.children ).some(
+								( child ) =>
+									child.classList.contains(
+										'awesome-nav-back'
+									)
 							)
 						) {
 							// FIX #7: Include parent item name in back button label.
@@ -345,7 +368,7 @@ const { actions } = store( 'awesome-navigation', {
 							parentScroller.scrollTop = 0;
 						}
 
-						requestAnimationFrame( () => {
+						window.requestAnimationFrame( () => {
 							// Re-check: a same-frame close (rapid toggle)
 							// runs its synchronous remove before this rAF
 							// lands — don't re-add a stale open class.
@@ -357,16 +380,33 @@ const { actions } = store( 'awesome-navigation', {
 							}
 
 							submenuContainer.classList.add( 'is-submenu-open' );
-
-							// NOT moving focus into the panel here, though
-							// it covers the toggle that still holds it
-							// (WCAG 2.4.11). Every attempt raced core's own
-							// submenu focus handling and ended with focus on
-							// <body>, which is worse than leaving it on the
-							// toggle. Tracked separately rather than shipped
-							// half-working — see the Back button, which is the
-							// intended target once the interaction with core is
-							// understood.
+							window.requestAnimationFrame( () => {
+								// Core's afterNextFrame finishes in a task after its frame.
+								setTimeout( () => {
+									const back = submenuContainer.querySelector(
+										':scope > .awesome-nav-back'
+									);
+									const owner = submenuItem.querySelector(
+										':scope > .wp-block-navigation-item__content'
+									);
+									const active =
+										submenuContainer.ownerDocument
+											.activeElement;
+									if (
+										back &&
+										submenuContainer.isConnected &&
+										ctx.isOpen &&
+										target.getAttribute(
+											'aria-expanded'
+										) === 'true' &&
+										ref.contains( target ) &&
+										( active === target ||
+											active === owner )
+									) {
+										back.focus( { preventScroll: true } );
+									}
+								}, 0 );
+							} );
 						} );
 					} else {
 						submenuContainer.classList.remove( 'is-submenu-open' );
@@ -378,9 +418,13 @@ const { actions } = store( 'awesome-navigation', {
 						// than letting it fall to <body>.
 						const active =
 							submenuContainer.ownerDocument.activeElement;
-						if ( submenuContainer.contains( active ) ) {
+						if (
+							ctx.isOpen &&
+							submenuContainer.contains( active )
+						) {
 							target.focus( { preventScroll: true } );
 						}
+						submenuContainer.inert = true;
 					}
 				}
 			} );
