@@ -40,6 +40,9 @@ render WordPress's default submenu layout instead.
 == Changelog ==
 
 = 2026.09.002 =
+* Fix: selected link decorations now apply inside the navigation pill.
+* Fix: click-mode submenus move focus to Back and become inert immediately when closing.
+* Fix: search-panel padding now animates while closing.
 * Fix: submenus no longer appear to hang before opening. The panel stayed hidden for the whole 0.4s slide, so the animation played invisibly and the submenu seemed to pop into place at the end.
 * Change: a submenu item now shows its label and a small "›" chevron inside a single field, split by a divider, instead of leaving an oversized chevron outside the item's outline. The chevron points the way the submenu panel slides in. Keyboard focus outlines the whole field, and a long unbroken label wraps instead of running under the divider.
 * Fix: the submenu panel covers the whole menu area again when the Navigation block sits inside a Group. It was anchoring to the Group and sitting inset by its padding.
