@@ -2,9 +2,9 @@
 Contributors: edequalsawesome
 Tags: navigation, menu, header, overlay, blocks
 Requires at least: 6.5
-Tested up to: 7.0
+Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 2026.09.001
+Stable tag: 2026.09.002
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,7 +29,21 @@ and consumes the outer pill's, leaving the outer Search button with no panel;
 and one Escape press dismisses both pills rather than just the inner one. There
 is no reason to nest pills, so this is documented rather than fixed.
 
+Keep the Navigation block inside the pill's menu content with its overlay menu
+set to *Off* (the menu content the plugin creates on activation ships it that
+way, and so do the Frosted Canvas patterns). The pill is already the overlay;
+WordPress's own mobile menu opens inside the pill's clipped content area and
+collides with the submenu panel. For submenus, use *Open on click* — that is
+what gets the pill's expand-in-place panel. *Always open* and *Show on hover*
+render WordPress's default submenu layout instead.
+
 == Changelog ==
+
+= 2026.09.002 =
+* Fix: submenus no longer appear to hang before opening. The panel stayed hidden for the whole 0.4s slide, so the animation played invisibly and the submenu seemed to pop into place at the end.
+* Change: a submenu item now shows its label and a small "›" chevron inside a single field, split by a divider, instead of leaving an oversized chevron outside the item's outline. The chevron points the way the submenu panel slides in. Keyboard focus outlines the whole field, and a long unbroken label wraps instead of running under the divider.
+* Fix: the submenu panel covers the whole menu area again when the Navigation block sits inside a Group. It was anchoring to the Group and sitting inset by its padding.
+* Fix: the menu-part repair added in 2026.09.001 now also covers parts the Site Editor is still holding as auto-drafts, since those show up in its lists too.
 
 = 2026.09.001 =
 * Fix: the pill's menu template part could lose its Navigation Overlay area, which hid it from the Menu Content picker and from the Site Editor's Navigation Overlay list. The plugin now re-tags it on the next admin page load.

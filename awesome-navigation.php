@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Awesome Navigation
  * Description: A floating navigation pill that expands to reveal your menu. Pushes content down at the top, floats over when scrolled. On WP 7.0+ includes frosted glass overlay patterns for Navigation Overlays.
- * Version: 2026.09.001
+ * Version: 2026.09.002
  * Requires at least: 6.5
  * Requires PHP: 8.0
  * Author: eD! Thomas
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'AWESOME_NAV_VERSION', '2026.09.001' );
+define( 'AWESOME_NAV_VERSION', '2026.09.002' );
 define( 'AWESOME_NAV_DIR', plugin_dir_path( __FILE__ ) );
 define( 'AWESOME_NAV_URL', plugin_dir_url( __FILE__ ) );
 
@@ -32,7 +32,7 @@ function awesome_nav_activate() {
 	// Check if the template part already exists.
 	$existing = get_posts( array(
 		'post_type'   => 'wp_template_part',
-		'post_status' => 'any',
+		'post_status' => array( 'any', 'trash', 'auto-draft' ),
 		'name'        => 'awesome-nav-menu',
 		'numberposts' => 1,
 	) );
@@ -119,12 +119,13 @@ function awesome_nav_heal_overlay_area() {
 		return;
 	}
 
-	// 'any' silently excludes trash; name it so an untrashed part comes back healed.
+	// 'any' silently excludes trash and auto-draft. Core lists auto-drafts, so
+	// they need the right area too; trash so an untrashed part comes back healed.
 	// No name filter: the picker's "Create New" mints awesome-nav-menu-2, -3, ...
 	// and those need the same guard. Template parts are few, so filter in PHP.
 	$parts = get_posts( array(
 		'post_type'   => 'wp_template_part',
-		'post_status' => array( 'any', 'trash' ),
+		'post_status' => array( 'any', 'trash', 'auto-draft' ),
 		'numberposts' => -1,
 	) );
 
@@ -609,7 +610,12 @@ function awesome_nav_convert_link_bg_to_variable( $block_content, $block ) {
 
 		// !important justified: overrides core's own inline background styles
 		// (third-party override — the exception to the no-!important rule).
-		$style = "--awesome-nav-item-color: {$color_value}; background: transparent !important; " . trim( $style );
+		// `inherit`, not `transparent`: the submenu takeover panel inside this
+		// <li> paints `background: inherit`, so a transparent item made the
+		// panel see-through. Inheriting gives the item the same surface every
+		// uncoloured item already gets from the pill's inherit chain; the card
+		// itself is painted by the stylesheet from --awesome-nav-item-color.
+		$style = "--awesome-nav-item-color: {$color_value}; background: inherit !important; " . trim( $style );
 
 		$processor->set_attribute( 'style', trim( $style ) );
 		$block_content = $processor->get_updated_html();
