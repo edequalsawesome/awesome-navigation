@@ -40,6 +40,7 @@ render WordPress's default submenu layout instead.
 == Changelog ==
 
 = 2026.09.002 =
+* Fix: remove the default pill border and outline shadows so Group border controls define the edge.
 * Fix: selected link decorations now apply inside the navigation pill.
 * Fix: click-mode submenus move focus to Back and become inert immediately when closing.
 * Fix: search-panel padding now animates while closing.
