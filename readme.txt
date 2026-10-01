@@ -4,7 +4,7 @@ Tags: navigation, menu, header, overlay, blocks
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 2026.09.002
+Stable tag: 2026.10.001
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,9 @@ what gets the pill's expand-in-place panel. *Always open* and *Show on hover*
 render WordPress's default submenu layout instead.
 
 == Changelog ==
+
+= 2026.10.001 =
+* Fix: hide temporary scrollbars during the menu opening animation while keeping tall menus scrollable afterwards. Reduced-motion users can scroll immediately.
 
 = 2026.09.002 =
 * Fix: remove the default pill border and outline shadows so Group border controls define the edge.
