@@ -106,6 +106,140 @@ const closeSearchPanel = ( ctx, pill, restoreFocus = true ) => {
 	}
 };
 
+/**
+ * Keep sRGB channels exact; let the browser convert other computed color spaces
+ * to sRGB, including their alpha, so every layer participates in blending.
+ *
+ * @param {string}   value A computed background-color.
+ * @param {Document} doc   The pill document.
+ * @return {{r: number, g: number, b: number, a: number}|null} sRGB channels.
+ */
+const parseRgb = ( value, doc ) => {
+	const match = value.match( /^rgba?\(([^)]+)\)$/ );
+	if ( ! match ) {
+		const canvas = doc.createElement( 'canvas' );
+		canvas.width = canvas.height = 1;
+		const context = canvas.getContext( '2d' );
+		if ( ! context ) {
+			return null;
+		}
+		context.fillStyle = value;
+		context.fillRect( 0, 0, 1, 1 );
+		const [ r, g, b, alpha ] = context.getImageData( 0, 0, 1, 1 ).data;
+		return { r, g, b, a: alpha / 255 };
+	}
+	const [ r, g, b, a = 1 ] = match[ 1 ]
+		.split( /[\s,/]+/ )
+		.filter( Boolean )
+		.map( Number );
+	return { r, g, b, a };
+};
+
+const canvasColor = ( doc ) => {
+	const probe = doc.createElement( 'div' );
+	probe.style.backgroundColor = 'Canvas';
+	doc.body.append( probe );
+	const value = doc.defaultView.getComputedStyle( probe ).backgroundColor;
+	probe.remove();
+	return value;
+};
+
+/**
+ * The solid color showing behind the pill: the nearest ancestor background,
+ * with any translucent layers above it blended in, ending at the browser
+ * canvas when nothing on the way paints. The pill's text inherits from that
+ * same context, so painting this keeps the theme's text/background pair intact
+ * where a fixed fallback color did not.
+ *
+ * @param {Element} pill The pill.
+ * @return {string} A CSS color.
+ */
+const surfaceBehind = ( pill ) => {
+	const view = pill.ownerDocument.defaultView;
+	const layers = [];
+	let base = null;
+	for ( let el = pill.parentElement; el && ! base; el = el.parentElement ) {
+		const value = view.getComputedStyle( el ).backgroundColor;
+		const rgb = parseRgb( value, pill.ownerDocument );
+		if ( ! rgb ) {
+			base = value;
+		} else if ( rgb.a >= 1 ) {
+			base = rgb;
+		} else if ( rgb.a > 0 ) {
+			layers.push( rgb );
+		}
+	}
+	base ??= canvasColor( pill.ownerDocument );
+	if ( typeof base === 'string' ) {
+		const rgb = parseRgb( base, pill.ownerDocument );
+		if ( ! rgb || ! layers.length ) {
+			return base;
+		}
+		base = rgb;
+	}
+	const { r, g, b } = layers.reduceRight(
+		( below, layer ) => ( {
+			r: layer.r * layer.a + below.r * ( 1 - layer.a ),
+			g: layer.g * layer.a + below.g * ( 1 - layer.a ),
+			b: layer.b * layer.a + below.b * ( 1 - layer.a ),
+		} ),
+		base
+	);
+	return `rgb(${ Math.round( r ) }, ${ Math.round( g ) }, ${ Math.round(
+		b
+	) })`;
+};
+
+const luminance = ( { r, g, b } ) => {
+	const channels = [ r, g, b ].map( ( channel ) => {
+		const value = channel / 255;
+		return value <= 0.04045
+			? value / 12.92
+			: ( ( value + 0.055 ) / 1.055 ) ** 2.4;
+	} );
+	return (
+		channels[ 0 ] * 0.2126 + channels[ 1 ] * 0.7152 + channels[ 2 ] * 0.0722
+	);
+};
+
+/**
+ * Give a pill with no chosen background the color behind it, so the submenu
+ * takeover's `background: inherit` chain has an opaque surface to cover the
+ * menu with. Explicit Group text colors get a contrasting fallback when needed.
+ * Refresh on open and theme changes.
+ *
+ * @param {Element|null} pill The pill.
+ */
+const syncSurface = ( pill ) => {
+	if ( ! pill || pill.matches( '.has-background, [style*="background"]' ) ) {
+		return;
+	}
+	let surface = surfaceBehind( pill );
+	if ( pill.matches( '.has-text-color' ) || pill.style.color ) {
+		const doc = pill.ownerDocument;
+		const text = parseRgb(
+			doc.defaultView.getComputedStyle( pill ).color,
+			doc
+		);
+		const background = parseRgb( surface, doc );
+		if ( text && background ) {
+			const foreground = luminance( text );
+			const behind = luminance( background );
+			const contrast =
+				( Math.max( foreground, behind ) + 0.05 ) /
+				( Math.min( foreground, behind ) + 0.05 );
+			if ( contrast < 4.5 ) {
+				surface = foreground > 0.179 ? '#000' : '#fff';
+			}
+		}
+	}
+	if (
+		pill.style.getPropertyValue( '--awesome-nav-pill-surface' ) !== surface
+	) {
+		pill.style.setProperty( '--awesome-nav-pill-surface', surface );
+	}
+};
+
 const { actions } = store( 'awesome-navigation', {
 	actions: {
 		toggle: () => {
@@ -130,6 +264,7 @@ const { actions } = store( 'awesome-navigation', {
 			// keys walk UP from the focused element, so focusing the
 			// non-scrollable outer container would scroll the page instead).
 			const { ref } = getElement();
+			syncSurface( pillOf( ref ) );
 			const content = pillOf( ref )?.querySelector(
 				'.awesome-nav-content'
 			);
@@ -208,6 +343,7 @@ const { actions } = store( 'awesome-navigation', {
 			ctx.isSearchOpen = true;
 
 			const { ref } = getElement();
+			syncSurface( pillOf( ref ) );
 			const active = ref.ownerDocument.activeElement;
 			window.requestAnimationFrame( () => {
 				const input = pillOf( ref )?.querySelector(
@@ -242,6 +378,44 @@ const { actions } = store( 'awesome-navigation', {
 			// or an observer callback. Capture the proxy here and close over
 			// it; its identity is stable for the element's lifetime.
 			const ctx = getContext();
+			syncSurface( ref );
+			const colorScheme = window.matchMedia(
+				'(prefers-color-scheme: dark)'
+			);
+			const handleColorScheme = () => syncSurface( ref );
+			colorScheme.addEventListener( 'change', handleColorScheme );
+			const surfaceObserver = new window.MutationObserver(
+				handleColorScheme
+			);
+			for (
+				let ancestor = ref.parentElement;
+				ancestor;
+				ancestor = ancestor.parentElement
+			) {
+				surfaceObserver.observe( ancestor, {
+					attributes: true,
+					attributeFilter: [
+						'class',
+						'style',
+						'data-theme',
+						'data-color-scheme',
+					],
+				} );
+			}
+			// Read again after theme backgrounds and explicit text finish transitioning.
+			const handleSurfaceTransition = ( event ) => {
+				if (
+					( event.propertyName === 'background-color' ||
+						event.propertyName === 'color' ) &&
+					event.target.contains( ref )
+				) {
+					syncSurface( ref );
+				}
+			};
+			ref.ownerDocument.addEventListener(
+				'transitionend',
+				handleSurfaceTransition
+			);
 			ref.querySelectorAll(
 				'.open-on-click > .wp-block-navigation__submenu-container'
 			).forEach( ( panel ) => {
@@ -438,6 +612,12 @@ const { actions } = store( 'awesome-navigation', {
 			// FIX #8: Include click listener in cleanup.
 			return () => {
 				document.removeEventListener( 'click', handleClickOutside );
+				colorScheme.removeEventListener( 'change', handleColorScheme );
+				surfaceObserver.disconnect();
+				ref.ownerDocument.removeEventListener(
+					'transitionend',
+					handleSurfaceTransition
+				);
 				observer.disconnect();
 			};
 		},

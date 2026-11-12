@@ -290,9 +290,18 @@
  * root menu straight through an open takeover. Give the pill a surface only
  * when the author has not picked one, so the chain always has something opaque
  * to carry and an author's own choice still wins.
+ *
+ * That surface is the color already behind the pill, which nav-pill.js reads
+ * from the page and writes to --awesome-nav-pill-surface. It cannot be a fixed
+ * color or a preset: a hard-coded #fff (or a theme's `base` preset, which many
+ * themes do not define) turned the pill white on dark themes while the text
+ * kept the theme's light color, so everything inside it went unreadable.
+ * Matching what is behind the pill keeps the theme's own text and background
+ * paired. Until the script runs, the pill stays transparent, which looks the
+ * same and avoids a flash of the wrong color.
  */
 .awesome-nav-pill:not(.has-background):not([style*="background"]) {
-	background-color: var( --wp--preset--color--base, #fff );
+	background-color: var( --awesome-nav-pill-surface, transparent );
 }
 
 .awesome-nav-content,
@@ -453,7 +462,7 @@
 	 *    (see the cover rules below), so its label would ghost through. Nesting
 	 *    compounds it: ~15% at level one, ~28% at level two.
 	 * 2. render.php writes `background: transparent !important` inline on this
-	 *    same <li> whenever an author picks an item colour. Inline !important
+	 *    same <li> whenever an author picks an item color. Inline !important
 	 *    beats a stylesheet !important, so a background here silently vanishes
 	 *    for exactly the users who customised their menu.
 	 * 3. It needs no !important of its own.
@@ -562,7 +571,7 @@
 		outline-offset: 4px;
 
 		/* `auto` on an author rule paints in currentColor, not the UA focus
-		   colour the plain items get. Name it; the system colour is the
+		   color the plain items get. Name it; the system color is the
 		   Firefox fallback. */
 		outline-color: Highlight;
 		outline-color: -webkit-focus-ring-color;
@@ -734,6 +743,16 @@
 	border: none !important;
 	box-shadow: none !important;
 	border-radius: 0 !important;
+}
+
+/*
+ * The panel inherits the pill's surface, so it has to inherit the text color
+ * that goes with it. Core gives an uncolored submenu `color: #000` for its own
+ * white dropdown, which left a dark theme's takeover black on near-black.
+ * A submenu text color chosen on the Navigation block still applies.
+ */
+.awesome-nav-pill .open-on-click > .wp-block-navigation__submenu-container:not(.has-text-color) {
+	color: inherit !important;
 }
 
 /* Drilling in reads start-to-end, so in RTL the panel enters from the left

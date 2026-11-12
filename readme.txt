@@ -4,7 +4,7 @@ Tags: navigation, menu, header, overlay, blocks
 Requires at least: 6.5
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 2026.10.001
+Stable tag: 2026.11.001
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,11 @@ what gets the pill's expand-in-place panel. *Always open* and *Show on hover*
 render WordPress's default submenu layout instead.
 
 == Changelog ==
+
+= 2026.11.001 =
+* Fix: a pill with no background chosen now matches the colors behind it instead of turning white. On dark themes the white pill left light text on a white background, so the site title and menu were unreadable. Choosing a background on the pill Group still overrides this.
+* Fix: an open submenu now uses the pill's text color instead of WordPress's default black, so it stays readable on dark backgrounds.
+* Fix: explicit pill Group text colors retain a contrasting fallback when the surrounding surface would make them unreadable. Theme class changes and completed background transitions refresh the surface.
 
 = 2026.10.001 =
 * Fix: hide temporary scrollbars during the menu opening animation while keeping tall menus scrollable afterwards. Reduced-motion users can scroll immediately.
