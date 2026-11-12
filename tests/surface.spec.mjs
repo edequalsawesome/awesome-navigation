@@ -43,7 +43,7 @@ async function render( page, { theme, body, runScript = true } ) {
 			for ( const element of document.querySelectorAll( '.awesome-nav-pill' ) ) {
 				window.navRef = element;
 				window.navContext = {};
-				window.navStore.callbacks.init();
+				window.navCleanup = window.navStore.callbacks.init();
 			}
 		} );
 	}
@@ -116,4 +116,96 @@ test( 'a background chosen in the editor still wins', async ( { page } ) => {
 test( 'never paints white before the script runs', async ( { page } ) => {
 	const [ result ] = await render( page, { theme: darkTheme, body: pill(), runScript: false } );
 	expect( result.pill ).toBe( 'rgba(0, 0, 0, 0)' );
+} );
+
+for ( const color of [ 'color(srgb 1 1 1 / 0.5)', 'oklch(100% 0 0 / 0.5)' ] ) {
+	test( `blends a translucent ${ color } header over the page`, async ( { page } ) => {
+		const [ result ] = await render( page, {
+			theme: darkTheme,
+			body: `<header style="background: ${ color }">${ pill() }</header>`,
+		} );
+		// Canvas color conversion can round a channel by one sRGB step.
+		expect( result.pill ).toMatch( /^rgb\(\d+, \d+, \d+\)$/ );
+		const channels = result.pill.match( /\d+/g ).map( Number );
+		[ 135, 133, 138 ].forEach( ( expected, index ) => {
+			expect( Math.abs( channels[ index ] - expected ) ).toBeLessThanOrEqual( 1 );
+		} );
+		expect( result.takeover ).toBe( result.pill );
+	} );
+}
+
+for ( const color of [ 'color(srgb 0 0 0)', 'oklch(0% 0 0)' ] ) {
+	test( `blends a nearer RGB layer over an opaque ${ color } header`, async ( { page } ) => {
+		const [ result ] = await render( page, {
+			theme: darkTheme,
+			body: `<header style="background: ${ color }"><div style="background: rgba(255, 255, 255, 0.5)">${ pill() }</div></header>`,
+		} );
+		expect( result.pill ).toBe( 'rgb(128, 128, 128)' );
+		expect( result.takeover ).toBe( result.pill );
+	} );
+}
+
+for ( const selected of [
+	{ style: 'color: #111' },
+	{ className: 'has-text-color' },
+] ) {
+	test( `explicit dark Group text keeps a readable fallback: ${ JSON.stringify( selected ) }`, async ( { page } ) => {
+		const [ result ] = await render( page, { theme: `${ darkTheme } .has-text-color { color: #111; }`, body: pill( selected ) } );
+		expect( result.pill ).toBe( 'rgb(255, 255, 255)' );
+		expect( result.text ).toBe( 'rgb(17, 17, 17)' );
+		expect( result.takeover ).toBe( result.pill );
+	} );
+}
+
+test( 'explicit light Group text retains a contrasting dark surface', async ( { page } ) => {
+	const [ result ] = await render( page, { theme: darkTheme, body: pill( { style: 'color: white' } ) } );
+	expect( result.pill ).toBe( 'rgb(14, 10, 20)' );
+} );
+
+const switchingTheme = 'body { background: white; color: black; } body.dark { background: black; color: white; }';
+
+test( 'a class-based theme switch refreshes a closed pill', async ( { page } ) => {
+	await render( page, { theme: switchingTheme, body: pill() } );
+	await page.evaluate( () => {
+		document.querySelector( '.awesome-nav-pill' ).classList.remove( 'is-open' );
+		document.body.classList.add( 'dark' );
+	} );
+	await expect( page.locator( '.awesome-nav-pill' ) ).toHaveCSS( 'background-color', 'rgb(0, 0, 0)' );
+} );
+
+test( 'an OS theme transition refreshes the final surface', async ( { page } ) => {
+	await page.emulateMedia( { colorScheme: 'light' } );
+	await render( page, {
+		theme: 'body { background: white; color: black; transition: background-color .2s; } @media (prefers-color-scheme: dark) { body { background: black; color: white; } }',
+		body: pill(),
+	} );
+	await page.emulateMedia( { colorScheme: 'dark' } );
+	await expect( page.locator( '.awesome-nav-pill' ) ).toHaveCSS( 'background-color', 'rgb(0, 0, 0)' );
+} );
+
+test( 'cleanup stops theme mutations, scheme changes and transition listeners', async ( { page } ) => {
+	await page.emulateMedia( { colorScheme: 'light' } );
+	await render( page, { theme: switchingTheme, body: pill() } );
+	await page.evaluate( () => {
+		window.navCleanup();
+		document.body.classList.add( 'dark' );
+		document.body.dispatchEvent( new TransitionEvent( 'transitionend', { bubbles: true, propertyName: 'background-color' } ) );
+	} );
+	await page.emulateMedia( { colorScheme: 'dark' } );
+	await page.evaluate( () => new Promise( resolve => requestAnimationFrame( () => requestAnimationFrame( resolve ) ) ) );
+	expect( await page.locator( '.awesome-nav-pill' ).evaluate( element => element.style.getPropertyValue( '--awesome-nav-pill-surface' ) ) ).toBe( 'rgb(255, 255, 255)' );
+} );
+
+test( 'mid-tone explicit text on a light page uses the higher-contrast black fallback', async ( { page } ) => {
+	const [ result ] = await render( page, { theme: lightTheme, body: pill( { style: 'color: #777' } ) } );
+	expect( result.pill ).toBe( 'rgb(0, 0, 0)' );
+} );
+
+test( 'an explicit Group text transition refreshes the final contrasting surface', async ( { page } ) => {
+	await render( page, {
+		theme: 'body { background: white; --text: black; } body.dark { background: black; --text: white; } .has-text-color { color: var(--text); transition: color .2s; }',
+		body: pill( { className: 'has-text-color' } ),
+	} );
+	await page.evaluate( () => document.body.classList.add( 'dark' ) );
+	await expect( page.locator( '.awesome-nav-pill' ) ).toHaveCSS( 'background-color', 'rgb(0, 0, 0)' );
 } );

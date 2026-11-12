@@ -42,6 +42,7 @@ render WordPress's default submenu layout instead.
 = 2026.11.001 =
 * Fix: a pill with no background chosen now matches the colors behind it instead of turning white. On dark themes the white pill left light text on a white background, so the site title and menu were unreadable. Choosing a background on the pill Group still overrides this.
 * Fix: an open submenu now uses the pill's text color instead of WordPress's default black, so it stays readable on dark backgrounds.
+* Fix: explicit pill Group text colors retain a contrasting fallback when the surrounding surface would make them unreadable. Theme class changes and completed background transitions refresh the surface.
 
 = 2026.10.001 =
 * Fix: hide temporary scrollbars during the menu opening animation while keeping tall menus scrollable afterwards. Reduced-motion users can scroll immediately.
